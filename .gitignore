@@ -1,0 +1,3 @@
+wandb/
+logs/
+__pycache__/

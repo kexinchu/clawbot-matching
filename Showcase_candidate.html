@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBRL Matching — Candidate Discovery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FAFAF8;--bg2:#F2F1ED;--bg3:#EBEAE5;
+  --text:#1A1A1A;--text2:#6B6B6B;--text3:#9B9B9B;
+  --border:#E5E4DF;--border2:#D5D4CF;
+  --green:#00B894;--green-bg:#00B89412;
+  --red:#D63031;--red-bg:#D6303110;
+  --blue:#0984E3;--blue-bg:#0984E312;
+  --amber:#FDCB6E;--amber-dark:#F9A825;
+  --font:'DM Sans',system-ui,-apple-system,sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#141413;--bg2:#1E1E1C;--bg3:#282826;
+    --text:#E8E6DF;--text2:#9A9890;--text3:#6B6962;
+    --border:#2E2E2B;--border2:#3E3E3A;
+  }
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:var(--font);cursor:pointer}
+.container{max-width:560px;margin:0 auto;padding:24px 16px 80px}
+
+.header{text-align:center;margin-bottom:32px}
+.header h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.header p{font-size:13px;color:var(--text2)}
+
+.tabs{display:flex;gap:6px;margin-bottom:24px}
+.tab{flex:1;padding:10px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:500;transition:all .2s}
+.tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--accent)}
+.tab:hover:not(.active){background:var(--bg2)}
+
+.requester{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;background:var(--bg2);margin-bottom:20px}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex-shrink:0}
+.avatar-sm{width:36px;height:36px;font-size:12px}
+
+.card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:14px;position:relative;cursor:pointer;transition:border-color .2s}
+.card.best{border-color:var(--accent);border-width:1.5px}
+.card.accepted{border-color:var(--green);border-width:1.5px}
+
+.badge{position:absolute;top:-11px;left:20px;color:#fff;font-size:11px;font-weight:500;padding:2px 12px;border-radius:10px}
+
+.rec-badge{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500;display:inline-block}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}
+.stat{background:var(--bg2);border-radius:8px;padding:8px 10px}
+.stat-label{font-size:11px;color:var(--text3)}
+.stat-value{font-size:15px;font-weight:500}
+
+.bar-track{width:100%;height:4px;border-radius:4px;background:color-mix(in srgb,var(--text) 8%,transparent)}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+.strength{font-size:13px;color:var(--text2);padding:2px 0;display:flex;gap:6px}
+.risk{font-size:13px;color:var(--text2);padding:2px 0;display:flex;gap:6px}
+
+.expand-section{border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+.section-title{font-size:12px;color:var(--text3);margin-bottom:10px;font-weight:500}
+
+.compat-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12px}
+.compat-label{width:120px;color:var(--text2);flex-shrink:0}
+.compat-score{width:28px;text-align:right;color:var(--text3)}
+
+.rating-box{margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--bg2)}
+.rating-box-label{font-size:12px;color:var(--text2);margin-bottom:8px}
+.stars{display:flex;gap:2px}
+.star{cursor:pointer;transition:transform .15s}
+.star:hover{transform:scale(1.15)}
+
+.btn-row{display:flex;gap:8px;margin-top:14px}
+.btn{padding:11px 0;border-radius:8px;font-size:13px;font-weight:500;border:none;transition:all .15s}
+.btn:active{transform:scale(0.98)}
+.btn-accept{flex:2;background:var(--accent);color:#fff}
+.btn-skip{flex:1;background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-reject{flex:1;background:var(--red-bg);border:1px solid color-mix(in srgb,var(--red) 20%,transparent);color:var(--red)}
+.btn-view{width:100%;margin-top:8px;padding:9px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px}
+.btn-submit{font-size:12px;padding:4px 14px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-weight:500}
+
+.dismissed{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);opacity:.6;margin-bottom:14px}
+.undo{font-size:12px;color:var(--text3);background:none;border:none;text-decoration:underline}
+
+.feedback-log{margin-top:16px;padding:12px 16px;border-radius:10px;background:var(--bg2);font-size:12px;color:var(--text2)}
+.feedback-log h3{font-weight:500;margin-bottom:6px;color:var(--text);font-size:13px}
+.log-item{padding:3px 0;display:flex;gap:8px;align-items:center}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.log-footer{font-size:11px;color:var(--text3);margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+
+.tap-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:8px}
+.accepted-msg{text-align:center;padding:11px 0;font-size:13px;color:var(--green);font-weight:500}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState} = React;
+
+const SCENARIOS = [
+  {
+    id:"research",label:"Research collab",
+    requester:{name:"Alice Chen",initials:"AC",role:"AI Startup CTO",task:"Bayesian churn prediction model → NeurIPS",accent:"#6C5CE7"},
+    candidates:[
+      {name:"Bob Zhang",initials:"BZ",role:"Stats PhD · Stanford",combined:.87,recommendation:"strong_match",capCoverage:100,needSatisfaction:76,avatar:"#6C5CE7",
+       stats:{collabs:12,successRate:"92%",avgRating:4.7},
+       strengths:["Bayesian expert (μ=0.9)","8 publications","Same timezone (EST)"],
+       risks:["20h/week limit","PhD coursework competing"],
+       softScores:{time:.70,priority:.85,style:.78,personality:.82}},
+      {name:"Carol Liu",initials:"CL",role:"ML Researcher · Freelance",combined:.73,recommendation:"risky_match",capCoverage:85,needSatisfaction:66,avatar:"#E17055",
+       stats:{collabs:3,successRate:"67%",avgRating:3.8},
+       strengths:["Creative novel approaches","Strong Python (μ=0.7)","Wants to publish"],
+       risks:["15h/week + freelancing","6h timezone gap (CET)","Inconsistent follow-through"],
+       softScores:{time:.45,priority:.65,style:.42,personality:.55}},
+    ]
+  },
+  {
+    id:"hiring",label:"Talent search",
+    requester:{name:"Ben Park",initials:"BP",role:"VP Data · FinTech Series B",task:"Hire Data Scientist — data mining & feature engineering",accent:"#00B894"},
+    candidates:[
+      {name:"Jenny Wang",initials:"JW",role:"New grad · 3 internships",combined:.83,recommendation:"strong_match",capCoverage:72,needSatisfaction:85,avatar:"#00B894",
+       stats:{collabs:3,successRate:"100%",avgRating:4.9},
+       strengths:["3 internships (Google, Stripe, startup)","Eager & available full-time","Salary within budget"],
+       risks:["No production ML experience","May need mentoring first 3 months"],
+       softScores:{time:.95,priority:.90,style:.85,personality:.88}},
+      {name:"John Miller",initials:"JM",role:"Senior DS · 8 years exp",combined:.79,recommendation:"good_match",capCoverage:98,needSatisfaction:45,avatar:"#2D3436",
+       stats:{collabs:34,successRate:"88%",avgRating:4.3},
+       strengths:["Expert data mining (μ=0.95)","Production system experience","Can lead projects day 1"],
+       risks:["Salary 40% above budget","Wants management track","May leave in ~1 year"],
+       softScores:{time:.80,priority:.50,style:.70,personality:.55}},
+    ]
+  },
+  {
+    id:"marketplace",label:"Marketplace",
+    requester:{name:"Simon Davis",initials:"SD",role:"Individual seller",task:"Sell 2021 Tesla Model 3 — 45k miles, good condition",accent:"#D63031"},
+    candidates:[
+      {name:"Kevin Zhao",initials:"KZ",role:"Buyer · Pre-approved financing",combined:.89,recommendation:"strong_match",capCoverage:95,needSatisfaction:82,avatar:"#D63031",
+       stats:{collabs:7,successRate:"86%",avgRating:4.6},
+       strengths:["Offer: $28,500 (above market avg)","Pre-approved loan, ready to close","Flexible on pickup timing"],
+       risks:["Wants pre-purchase inspection (+3-5 days)"],
+       softScores:{time:.90,priority:.92,style:.85,personality:.88}},
+      {name:"Benjamin Foster",initials:"BF",role:"Buyer · Cash offer",combined:.77,recommendation:"good_match",capCoverage:80,needSatisfaction:70,avatar:"#636E72",
+       stats:{collabs:2,successRate:"50%",avgRating:3.5},
+       strengths:["Cash buyer, no financing delay","Can pick up today"],
+       risks:["Offer: $25,200 (below market)","History of last-minute renegotiation","Low platform reputation"],
+       softScores:{time:.95,priority:.60,style:.65,personality:.50}},
+    ]
+  }
+];
+
+const recMap = {
+  strong_match:{bg:"var(--green-bg)",text:"var(--green)",label:"Strong match"},
+  good_match:{bg:"var(--blue-bg)",text:"var(--blue)",label:"Good match"},
+  risky_match:{bg:"#E1705515",text:"#E17055",label:"Risky match"},
+  poor_match:{bg:"var(--red-bg)",text:"var(--red)",label:"Poor match"},
+};
+
+function Bar({value,color,h=4}){
+  return <div className="bar-track" style={{height:h}}><div className="bar-fill" style={{width:`${value*100}%`,background:color,height:h}}/></div>;
+}
+
+function Stars({rating,onRate,size=22}){
+  const[hover,setHover]=useState(0);
+  return <div className="stars">{[1,2,3,4,5].map(s=>{
+    const on=s<=(hover||rating);
+    return <svg key={s} width={size} height={size} viewBox="0 0 24 24" className="star"
+      onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)}
+      onClick={e=>{e.stopPropagation();onRate(s)}}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+        fill={on?"var(--amber)":"none"} stroke={on?"var(--amber-dark)":"color-mix(in srgb,var(--text) 20%,transparent)"}
+        strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>})}</div>;
+}
+
+function Card({c,accent,idx,onAction}){
+  const[open,setOpen]=useState(false);
+  const[action,setAction]=useState(null);
+  const[rating,setRating]=useState(0);
+  const[rated,setRated]=useState(false);
+  const rec=recMap[c.recommendation]||recMap.good_match;
+
+  const doAction=t=>{setAction(t);onAction&&onAction(c.name,t,rating)};
+  const doRate=s=>{setRating(s);setRated(false)};
+  const submitRate=e=>{e.stopPropagation();setRated(true);onAction&&onAction(c.name,"rated",rating)};
+
+  if(action==="rejected"||action==="skipped"){
+    return <div className="dismissed">
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div className="avatar avatar-sm" style={{background:"color-mix(in srgb,var(--text) 6%,transparent)",color:"var(--text3)"}}>{c.initials}</div>
+        <div>
+          <span style={{fontSize:14,color:"var(--text2)"}}>{c.name}</span>
+          <span style={{fontSize:11,marginLeft:8,padding:"2px 8px",borderRadius:6,
+            background:action==="rejected"?"var(--red-bg)":"var(--bg3)",
+            color:action==="rejected"?"var(--red)":"var(--text3)"}}>{action==="rejected"?"Rejected":"Skipped"}</span>
+        </div>
+      </div>
+      <button className="undo" onClick={()=>setAction(null)}>Undo</button>
+    </div>;
+  }
+
+  const cls=`card${idx===0&&!action?" best":""}${action==="accepted"?" accepted":""}`;
+
+  return <div className={cls} style={{"--accent":accent}} onClick={()=>setOpen(!open)}>
+    {idx===0&&!action&&<div className="badge" style={{background:accent}}>Best match</div>}
+    {action==="accepted"&&<div className="badge" style={{background:"var(--green)"}}>Accepted</div>}
+
+    <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
+      <div className="avatar" style={{background:c.avatar+"18",color:c.avatar}}>{c.initials}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:16,fontWeight:500}}>{c.name}</span>
+          <span className="rec-badge" style={{background:rec.bg,color:rec.text}}>{rec.label}</span>
+        </div>
+        <div style={{fontSize:13,color:"var(--text2)",marginTop:2}}>{c.role}</div>
+      </div>
+      <div style={{textAlign:"right",flexShrink:0}}>
+        <div style={{fontSize:22,fontWeight:600,color:accent}}>{(c.combined*100).toFixed(0)}</div>
+        <div style={{fontSize:11,color:"var(--text3)"}}>Score</div>
+      </div>
+    </div>
+
+    <div className="stats-grid">
+      {[{l:"Collaborations",v:c.stats.collabs},{l:"Success rate",v:c.stats.successRate},{l:"Avg rating",v:c.stats.avgRating}].map(s=>
+        <div key={s.l} className="stat"><div className="stat-label">{s.l}</div><div className="stat-value">{s.v}</div></div>)}
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14,fontSize:12}}>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",color:"var(--text2)",marginBottom:4}}><span>Gap coverage</span><span>{c.capCoverage}%</span></div>
+        <Bar value={c.capCoverage/100} color={accent}/>
+      </div>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",color:"var(--text2)",marginBottom:4}}><span>Need satisfaction</span><span>{c.needSatisfaction}%</span></div>
+        <Bar value={c.needSatisfaction/100} color={accent}/>
+      </div>
+    </div>
+
+    <div style={{marginBottom:open?14:0}}>
+      {c.strengths.slice(0,open?99:2).map((s,i)=><div key={i} className="strength"><span style={{color:"var(--green)",flexShrink:0}}>+</span>{s}</div>)}
+      {c.risks.slice(0,open?99:1).map((r,i)=><div key={i} className="risk"><span style={{color:"#E17055",flexShrink:0}}>!</span>{r}</div>)}
+    </div>
+
+    {open&&<div className="expand-section">
+      <div className="section-title">Dream simulation — soft compatibility</div>
+      {Object.entries({"Time & energy":c.softScores.time,"Priority alignment":c.softScores.priority,"Collaboration style":c.softScores.style,"Personality fit":c.softScores.personality}).map(([l,v])=>
+        <div key={l} className="compat-row">
+          <span className="compat-label">{l}</span>
+          <div style={{flex:1}}><Bar value={v} color={v>=.7?"var(--green)":v>=.5?"var(--amber)":"#E17055"} h={3}/></div>
+          <span className="compat-score">{(v*100).toFixed(0)}</span>
+        </div>)}
+
+      <div className="rating-box">
+        <div className="rating-box-label">Rate this recommendation</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <Stars rating={rating} onRate={doRate}/>
+          {rating>0&&!rated&&<button className="btn-submit" style={{background:accent}} onClick={submitRate}>Submit</button>}
+          {rated&&<span style={{fontSize:12,color:"var(--green)",fontWeight:500}}>{rating}/5 submitted</span>}
+        </div>
+        {rating>0&&!rated&&<div style={{fontSize:11,color:"var(--text3)",marginTop:6}}>
+          {rating<=2?"This helps us improve future matches":rating<=4?"Thanks for the feedback":"Glad this match works for you"}</div>}
+      </div>
+
+      <div className="btn-row">
+        {action!=="accepted"?<>
+          <button className="btn btn-accept" style={{background:accent}} onClick={e=>{e.stopPropagation();doAction("accepted")}}>Accept</button>
+          <button className="btn btn-skip" onClick={e=>{e.stopPropagation();doAction("skipped")}}>Skip</button>
+          <button className="btn btn-reject" onClick={e=>{e.stopPropagation();doAction("rejected")}}>Reject</button>
+        </>:<div className="accepted-msg">Match accepted — notification sent</div>}
+      </div>
+      <button className="btn-view" onClick={e=>e.stopPropagation()}>View simulated conversation</button>
+    </div>}
+
+    {!open&&<div className="tap-hint">Tap to expand</div>}
+  </div>;
+}
+
+function FeedbackLog({actions}){
+  if(!actions.length)return null;
+  const dots={accepted:"var(--green)",rejected:"var(--red)",skipped:"var(--text3)",rated:"var(--amber)"};
+  const labels={accepted:"Accepted",rejected:"Rejected",skipped:"Skipped",rated:"Rated"};
+  return <div className="feedback-log">
+    <h3>Feedback log</h3>
+    {actions.map((a,i)=><div key={i} className="log-item">
+      <span className="log-dot" style={{background:dots[a.type]}}/>
+      <span style={{flex:1}}>{a.name}</span>
+      <span style={{color:"var(--text3)"}}>{a.type==="rated"?`Rated ${a.rating}/5`:labels[a.type]}</span>
+    </div>)}
+    <div className="log-footer">Feeds into Layer 5 reward: R = (r_feedback + 0.5·r_efficiency + r_quality) / 2.5</div>
+  </div>;
+}
+
+function Scene({scenario}){
+  const[actions,setActions]=useState([]);
+  const{requester:req,candidates}=scenario;
+  const onAction=(name,type,rating)=>setActions(p=>[...p.filter(a=>!(a.name===name&&a.type===type)),{name,type,rating}]);
+  return <div>
+    <div className="requester">
+      <div className="avatar" style={{background:req.accent+"20",color:req.accent,width:40,height:40,fontSize:13}}>{req.initials}</div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,fontWeight:500}}>{req.name} <span style={{fontWeight:400,color:"var(--text2)"}}>· {req.role}</span></div>
+        <div style={{fontSize:13,color:"var(--text2)",marginTop:2}}>{req.task}</div>
+      </div>
+    </div>
+    {candidates.map((c,i)=><Card key={c.name} c={c} accent={req.accent} idx={i} onAction={onAction}/>)}
+    <FeedbackLog actions={actions}/>
+  </div>;
+}
+
+function App(){
+  const[active,setActive]=useState(0);
+  return <div className="container">
+    <div className="header">
+      <h1>Candidate discovery</h1>
+      <p>MBRL matching system · Layer 4 presentation</p>
+    </div>
+    <div className="tabs">
+      {SCENARIOS.map((s,i)=><button key={s.id} className={`tab${i===active?" active":""}`}
+        style={{"--accent":s.requester.accent}} onClick={()=>setActive(i)}>{s.label}</button>)}
+    </div>
+    <Scene key={SCENARIOS[active].id} scenario={SCENARIOS[active]}/>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

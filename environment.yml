@@ -1,0 +1,11 @@
+name: mbrl-matching
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy>=1.26
+  - openai>=1.30
+  - pip
+  - pip:
+    - wandb>=0.17
