@@ -42,7 +42,7 @@ mapping-algo/
 ### 安装依赖
 
 ```bash
-pip install numpy sentence-transformers pytest
+conda env create -f environment.yml
 ```
 
 ### 运行测试

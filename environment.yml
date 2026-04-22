@@ -9,3 +9,5 @@ dependencies:
   - pip
   - pip:
     - wandb>=0.17
+    - sentence-transformers
+    - pytest
