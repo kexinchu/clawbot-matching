@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+import sys
+import types
+import unittest
+from pathlib import Path
+from unittest import mock
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ONLINE_LEARNING_DIR = REPO_ROOT / "Online_learning"
+
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(ONLINE_LEARNING_DIR))
+
+import LLM_Dreaming.LLM_dreaming as dreaming  # noqa: E402
+
+
+class TestDreamSimulatorLoading(unittest.TestCase):
+    def test_uses_mock_mode_without_api_key(self):
+        with mock.patch.object(dreaming, "API_KEY", ""):
+            simulator = dreaming.DreamSimulator(base_url="https://llm.example")
+
+        self.assertTrue(simulator.mock_mode)
+        self.assertEqual(simulator.api_url, "https://llm.example/chat/completions")
+        self.assertFalse(hasattr(simulator, "client"))
+
+    def test_creates_http_client_when_api_key_is_present(self):
+        created = {}
+
+        class DummyClient:
+            pass
+
+        def fake_client(*, timeout):
+            created["timeout"] = timeout
+            return DummyClient()
+
+        with mock.patch.object(dreaming, "API_KEY", "test-key"):
+            fake_httpx = types.SimpleNamespace(Client=fake_client)
+            with mock.patch.object(dreaming, "httpx", fake_httpx):
+                simulator = dreaming.DreamSimulator(base_url="https://llm.example")
+
+        self.assertFalse(simulator.mock_mode)
+        self.assertIsInstance(simulator.client, DummyClient)
+        self.assertEqual(created["timeout"], 60.0)
+
+
+class TestProfileBuilding(unittest.TestCase):
+    def test_create_test_candidates_builds_extended_and_soft_profiles(self):
+        requester, task, candidates = dreaming.create_test_candidates()
+        candidate = candidates[0]
+
+        self.assertIsInstance(requester, dreaming.ExtendedProfile)
+        self.assertIsInstance(requester.profile, dreaming.UserProfile)
+        self.assertIsInstance(requester.soft, dreaming.SoftProfile)
+        self.assertEqual(requester.user_id, "alice")
+        self.assertEqual(task.goal, "Build Bayesian churn model, target NeurIPS")
+
+        self.assertIsInstance(candidate, dreaming.ExtendedProfile)
+        self.assertIsInstance(candidate.profile, dreaming.UserProfile)
+        self.assertIsInstance(candidate.soft, dreaming.SoftProfile)
+        self.assertEqual(candidate.user_id, "bob")
+        self.assertEqual(candidate.soft.availability, "20h/week")
+        self.assertIn("first-author NeurIPS paper", candidate.soft.priorities)
+
+    def test_build_agent_persona_contains_role_specific_profile_details(self):
+        requester, task, candidates = dreaming.create_test_candidates()
+        candidate = candidates[0]
+
+        requester_persona = dreaming.build_agent_persona(requester, "requester", task)
+        candidate_persona = dreaming.build_agent_persona(candidate, "candidate", task)
+
+        self.assertIn("posted the task", requester_persona)
+        self.assertIn(requester.user_id, requester_persona)
+        self.assertIn(requester.soft.collab_style, requester_persona)
+        self.assertIn("considered for the task", candidate_persona)
+        self.assertIn(candidate.user_id, candidate_persona)
+        self.assertIn(candidate.soft.communication, candidate_persona)
+
+
+class TestDreamConversation(unittest.TestCase):
+    def test_simulate_conversation_returns_transcript_and_compatibility(self):
+        requester, task, candidates = dreaming.create_test_candidates()
+        candidate = candidates[0]
+
+        with mock.patch.object(dreaming, "API_KEY", ""):
+            simulator = dreaming.DreamSimulator(base_url="https://llm.example", n_turns=3)
+            result = simulator.simulate_conversation(requester, candidate, task)
+
+        self.assertEqual(result["candidate_id"], candidate.user_id)
+        self.assertEqual(len(result["transcript"]), 6)
+        self.assertEqual(result["transcript"][0]["role"], f"agent_{requester.user_id}")
+        self.assertEqual(result["transcript"][1]["role"], f"agent_{candidate.user_id}")
+
+        compatibility = result["compatibility"]
+        self.assertGreaterEqual(compatibility["overall_compatibility"], 0.0)
+        self.assertLessEqual(compatibility["overall_compatibility"], 1.0)
+        self.assertIn(compatibility["recommendation"], {
+            "strong_match",
+            "good_match",
+            "risky_match",
+            "poor_match",
+        })
+        for key in ("time_energy", "priority_alignment", "collab_style", "personality_fit"):
+            self.assertIn("score", compatibility[key])
+            self.assertIn("reason", compatibility[key])

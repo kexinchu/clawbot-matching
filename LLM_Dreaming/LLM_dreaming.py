@@ -20,15 +20,17 @@ import httpx
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from Online_learning import (
-    UserProfile, Capability, Task, MatchResult, WorldModel,
-    dummy_create_task,
-)
+from UserProfile import UserProfile
+from Capability import Capability
+from Task import Task
+from MatchResult import MatchResult
+from WorldModel import WorldModel
+from utils import dummy_create_task
 
 # Set your API key via environment variable:
-#   export ANTHROPIC_API_KEY="sk-ant-..."
+#   export OPENAI_API_KEY="..."
 # If not set, runs in mock mode with synthetic conversations.
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 
 # ============================================================
@@ -320,40 +322,45 @@ Respond ONLY with valid JSON, no markdown, no backticks:
 
 class DreamSimulator:
     """
-    Simulate agent-agent conversations using the Anthropic API.
+    Simulate agent-agent conversations using the API.
     Each conversation is a 'dream' — the match is tested in imagination
     before committing real user attention.
 
-    If ANTHROPIC_API_KEY is not set, runs in mock mode with rule-based responses.
+    If API_KEY is not set, runs in mock mode with rule-based responses.
     """
 
-    def __init__(self, n_turns: int = 3, model: str = "claude-sonnet-4-20250514"):
+    def __init__(self, base_url, n_turns: int = 3, model: str = "openai/gpt-4o", temperature: float = 0.0):
         self.n_turns = n_turns
         self.model = model
-        self.api_url = "https://api.anthropic.com/v1/messages"
+        self.temperature = temperature
+        self.base_url = base_url
+        self.api_url = f"{self.base_url}/chat/completions"
         self.mock_mode = not bool(API_KEY)
         if not self.mock_mode:
+            if httpx is None:
+                raise ModuleNotFoundError(
+                    "httpx is required for DreamSimulator when OPENAI_API_KEY is set"
+                )
             self.client = httpx.Client(timeout=60.0)
         if self.mock_mode:
-            print("  [Mock mode — set ANTHROPIC_API_KEY for real LLM calls]\n")
+            print("  [Mock mode — set API_KEY for real LLM calls]\n")
 
     def _call_llm(self, system: str, messages: list) -> str:
-        """Call Anthropic API, or return mock response."""
+        """Call API, or return mock response."""
         if self.mock_mode:
             return self._mock_response(system, messages)
 
         resp = self.client.post(
             self.api_url,
             headers={
+                "Accept": "application/json",
                 "Content-Type": "application/json",
-                "x-api-key": API_KEY,
-                "anthropic-version": "2023-06-01",
+                "Authorization": f"Bearer {API_KEY}",
             },
             json={
-                "model": self.model,
-                "max_tokens": 512,
-                "system": system,
+                "model": self.model, 
                 "messages": messages,
+                "temperature": self.temperature,
             },
         )
         resp.raise_for_status()
