@@ -53,7 +53,7 @@ $$\boxed{M(u, v, T) = \sigma(u, v, T) \cdot \big( w_c \cdot S_{\text{cap}}(v, u,
 
 ### 调研 1：问题定义 — User-Agent 异构协作网络 $\mathcal{N}$
 
-- **节点**：$\mathcal{V} = \mathcal{H} \cup \mathcal{A}$（人类 + 智能体），状态 $s_v = (\mathbf{Cap}_v, \mathbf{Need}_v)$
+- **节点**：**V** = **H** ∪ **A**（人类 + 智能体）；节点状态 *s*<sub>v</sub> = (**Cap**<sub>v</sub>, **Need**<sub>v</sub>)。与形式化记号 $\mathcal{V}=\mathcal{H}\cup\mathcal{A}$、$s_v=(\mathbf{Cap}_v,\mathbf{Need}_v)$ 同义（后者需在支持数学公式的预览器中渲染）。
 - **任务四元组**：$T = (G_T, \mathbf{Q}_T, \mathbf{O}_T, \mathbf{L}_T, \mathbf{X}_T)$（目标 / 需求 / Offer / 约束 / 上下文）
 - **核心问题**：双边社会福利最大化 $\max_{\mathcal{S}} \sum_{v \in \mathcal{S}} [U_u(v,T) + \gamma U_v(v,T)]$
 - **参与约束**：$U_v(v,T) \geq \theta_v$（候选者保留效用）
@@ -61,11 +61,36 @@ $$\boxed{M(u, v, T) = \sigma(u, v, T) \cdot \big( w_c \cdot S_{\text{cap}}(v, u,
 
 ### 调研 2：节点表征 — 变长 Embedding 集合取代固定维度
 
-- **$\mathbf{Cap}_v = \{(e_i^v, p_i^v, \sigma_i^v)\}$**：embedding + 熟练度期望 + 不确定性
-- **$\mathbf{Need}_v = \{(e_l^v, n_l^v)\}$**：embedding + 需求强度
-- **三层知识源对应不同 $\sigma_{\text{obs}}$**：显式(0.2) / 隐式(0.4) / 元知识(0.6)
-- **动态扩展**：新能力通过 $\text{Enc}$ 自动纳入语义空间，无需全局重建 $K$
-- **可选扩展维度**：$\mathbf{Per}_v$（风格）/ $\mathbf{Sec}_v$（权限）/ $\mathbf{Bud}_v$（预算）
+**能力集合 Cap<sub>v</sub>**（粗体向量；下标 *v* 为节点）——在支持数学公式的 Markdown 预览中会渲染为：
+
+$$
+\mathbf{Cap}_v = \left\{ \left( e_i^v,\; p_i^v,\; \sigma_i^v \right) \right\}
+$$
+
+- 每个三元组：*e*<sub>i</sub><sup>v</sup> 为第 *i* 条能力的 **embedding**；*p*<sub>i</sub><sup>v</sup> 为 **熟练度期望**；*σ*<sub>i</sub><sup>v</sup> 为 **不确定性**（贝叶斯后验方差等，与实现约定一致）。
+
+**需求集合 Need<sub>v</sub>**：
+
+$$
+\mathbf{Need}_v = \left\{ \left( e_\ell^v,\; n_\ell^v \right) \right\}
+$$
+
+- 每个二元组：*e*<sub>ℓ</sub><sup>v</sup> 为需求项的 **embedding**；*n*<sub>ℓ</sub><sup>v</sup> 为 **需求强度**。
+
+**三层知识源与观测噪声 σ<sub>obs</sub>**（以下表格在任意阅读器中均可读；公式形式见块内 LaTeX）：
+
+$$
+\sigma_{\text{obs}} \in \{0.2,\; 0.4,\; 0.6\} \;\;\text{（显式 / 隐式 / 元知识）}
+$$
+
+| 知识源 | σ<sub>obs</sub> |
+|--------|----------------|
+| 显式 | 0.2 |
+| 隐式 | 0.4 |
+| 元知识 | 0.6 |
+
+- **动态扩展**：新能力通过编码器 **Enc** 自动纳入语义空间，无需全局重建规模 *K*。
+- **可选扩展维度**：**Per**<sub>v</sub>（风格）/ **Sec**<sub>v</sub>（权限）/ **Bud**<sub>v</sub>（预算）。
 
 ### 调研 3：能力覆盖分 $S_{\text{cap}}$ — Gap 驱动的互补而非相似
 
@@ -98,7 +123,7 @@ $$\boxed{M(u, v, T) = \sigma(u, v, T) \cdot \big( w_c \cdot S_{\text{cap}}(v, u,
 | 候选者激励 | 不建模 | 双边效用 + 参与约束 $U_v \geq \theta_v$ |
 | 匹配目标 | 单边覆盖 / 稳定性 | 双边社会福利最大化 |
 | 探索机制 | 无 | UCB 乐观估计，次线性遗憾界 |
-| 互补性驱动 | 技能覆盖（重复计入） | Gap 驱动（已有不计分）|
+| 互补性驱动 | 技能覆盖（重复计入） | Gap 驱动（已有不计分） |
 
 **理论保证**：
 - $(1 - 1/e) \approx 63\%$ 贪心近似比（子模性 + Nemhauser 1978）
