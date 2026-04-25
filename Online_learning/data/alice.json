@@ -1,0 +1,14 @@
+{
+  "user_id": "alice",
+  "clearance_level": 0,
+  "capabilities": [
+    {"description": "bayesian statistics", "mu": 0.3, "sigma": 0.2, "source": "explicit"},
+    {"description": "python programming",  "mu": 0.8, "sigma": 0.1, "source": "explicit"},
+    {"description": "academic paper writing", "mu": 0.4, "sigma": 0.3, "source": "implicit"}
+  ],
+  "needs": [
+    {"description": "bayesian statistics mentorship", "intensity": 0.8},
+    {"description": "python programming practice",   "intensity": 0.1},
+    {"description": "academic paper writing collaboration", "intensity": 0.7}
+  ]
+}
