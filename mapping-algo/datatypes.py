@@ -24,6 +24,10 @@ class CapabilityEntry:
     source: str = "explicit"    # "explicit" | "implicit" | "meta"
     description: str = ""
 
+    def ucb(self, beta: float) -> float:
+        """UCB optimistic estimate: μ̃ = min(μ + β·σ, 1.0)."""
+        return min(self.mu + beta * self.sigma, 1.0)
+
 
 @dataclass
 class NeedEntry:

@@ -1,0 +1,15 @@
+{
+  "task_id": "task_001",
+  "goal": "Build Bayesian churn model, target NeurIPS",
+  "data_clearance": 0,
+  "requirements": [
+    {"description": "bayesian statistics",    "level": 0.8, "constraint_type": "soft"},
+    {"description": "python programming",     "level": 0.6, "constraint_type": "soft"},
+    {"description": "academic paper writing", "level": 0.7, "constraint_type": "soft"}
+  ],
+  "offers": [
+    {"description": "research collaboration", "strength": 0.8, "source": "explicit"},
+    {"description": "academic authorship",    "strength": 0.7, "source": "explicit"},
+    {"description": "python programming",     "strength": 0.5, "source": "inferred"}
+  ]
+}

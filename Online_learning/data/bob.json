@@ -1,0 +1,14 @@
+{
+  "user_id": "bob",
+  "clearance_level": 1,
+  "capabilities": [
+    {"description": "bayesian statistics", "mu": 0.9, "sigma": 0.1, "source": "explicit"},
+    {"description": "python programming",  "mu": 0.5, "sigma": 0.2, "source": "explicit"},
+    {"description": "academic paper writing", "mu": 0.8, "sigma": 0.1, "source": "explicit"}
+  ],
+  "needs": [
+    {"description": "python programming practice",        "intensity": 0.7},
+    {"description": "academic paper writing collaboration","intensity": 0.9},
+    {"description": "bayesian statistics research",       "intensity": 0.2}
+  ]
+}
