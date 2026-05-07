@@ -1,0 +1,10 @@
+# Core simulator dependencies — minimal, no LLM API required.
+# Python 3.10+ required.
+#
+# Optional (for real LLM backends):
+#   openai>=1.0.0        # OpenAI backend
+#   anthropic>=0.20.0    # Anthropic backend
+#   vllm>=0.3.0          # vLLM backend
+#
+# For testing:
+#   pytest>=7.0.0

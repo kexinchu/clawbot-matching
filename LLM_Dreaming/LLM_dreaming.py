@@ -14,23 +14,35 @@ soft compatibility that the formula cannot capture:
 Outputs top-3 refined candidates with compatibility reports.
 """
 
+import sys
+import os as _os
+_HERE = _os.path.dirname(_os.path.abspath(__file__))
+for _p in [
+    _os.path.join(_HERE, '..', 'mapping-algo'),
+    _os.path.join(_HERE, '..', 'Online_learning'),
+]:
+    if _p not in sys.path:
+        sys.path.append(_p)
+
 import json
 import os
 import httpx
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from UserProfile import UserProfile
-from Capability import Capability
-from Task import Task
-from MatchResult import MatchResult
+from datatypes import (
+    UserState, CapabilityEntry, NeedEntry,
+    Task, TaskRequirement, TaskOffer, MatchResult,
+)
+from encoder import SimpleEncoder
 from WorldModel import WorldModel
-from utils import dummy_create_task
+
+_enc = SimpleEncoder(dim=64)
 
 # Set your API key via environment variable:
-#   export OPENAI_API_KEY="..."
+#   export ANTHROPIC_API_KEY="sk-ant-..."
 # If not set, runs in mock mode with synthetic conversations.
-API_KEY = os.environ.get("OPENAI_API_KEY", "")
+API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 
 # ============================================================
@@ -51,13 +63,21 @@ class SoftProfile:
 
 @dataclass
 class ExtendedProfile:
-    """UserProfile + SoftProfile for dream simulation."""
-    profile: UserProfile
+    """UserState + SoftProfile for dream simulation."""
+    profile: UserState
     soft: SoftProfile
 
     @property
     def user_id(self) -> str:
         return self.profile.user_id
+
+
+def _cap(desc, mu, sigma, source="explicit"):
+    return CapabilityEntry(_enc(desc), mu=mu, sigma=sigma, source=source, description=desc)
+
+
+def _need(desc, intensity):
+    return NeedEntry(_enc(desc), intensity=intensity, description=desc)
 
 
 # ============================================================
@@ -73,18 +93,30 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
     task = Task(
         task_id="task_001",
         goal="Build Bayesian churn model, target NeurIPS",
-        Q_T={"bayesian": 0.8, "python": 0.6, "paper_writing": 0.7}
+        requirements=[
+            TaskRequirement(_enc("bayesian statistics"),    level=0.8, constraint_type="soft", description="bayesian"),
+            TaskRequirement(_enc("python programming"),     level=0.6, constraint_type="soft", description="python"),
+            TaskRequirement(_enc("academic paper writing"), level=0.7, constraint_type="soft", description="paper_writing"),
+        ],
+        offers=[
+            TaskOffer(_enc("research collaboration"), strength=0.8, source="explicit", description="research collaboration"),
+            TaskOffer(_enc("academic authorship"),    strength=0.7, source="explicit", description="co-authorship"),
+        ],
     )
 
     alice = ExtendedProfile(
-        profile=UserProfile(
+        profile=UserState(
             user_id="alice",
-            capability={
-                "bayesian": Capability(0.3, 0.2),
-                "python": Capability(0.8, 0.1),
-                "paper_writing": Capability(0.4, 0.3),
-            },
-            need={"bayesian": 0.8, "python": 0.1, "paper_writing": 0.7},
+            capabilities=[
+                _cap("bayesian statistics",    0.3, 0.2),
+                _cap("python programming",     0.8, 0.1),
+                _cap("academic paper writing", 0.4, 0.3, source="implicit"),
+            ],
+            needs=[
+                _need("bayesian statistics mentorship", 0.8),
+                _need("python programming",             0.1),
+                _need("academic paper writing",         0.7),
+            ],
         ),
         soft=SoftProfile(
             availability="30h/week",
@@ -102,14 +134,18 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
     candidates = [
         # Bob: strong match analytically, good soft fit
         ExtendedProfile(
-            profile=UserProfile(
+            profile=UserState(
                 user_id="bob",
-                capability={
-                    "bayesian": Capability(0.9, 0.1),
-                    "python": Capability(0.5, 0.2),
-                    "paper_writing": Capability(0.8, 0.1),
-                },
-                need={"bayesian": 0.2, "python": 0.7, "paper_writing": 0.9},
+                capabilities=[
+                    _cap("bayesian statistics",    0.9, 0.1),
+                    _cap("python programming",     0.5, 0.2),
+                    _cap("academic paper writing", 0.8, 0.1),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.2),
+                    _need("python programming",     0.7),
+                    _need("academic paper writing", 0.9),
+                ],
             ),
             soft=SoftProfile(
                 availability="20h/week",
@@ -126,14 +162,18 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Carol: high uncertainty, creative but chaotic
         ExtendedProfile(
-            profile=UserProfile(
+            profile=UserState(
                 user_id="carol",
-                capability={
-                    "bayesian": Capability(0.6, 0.4),
-                    "python": Capability(0.7, 0.35),
-                    "paper_writing": Capability(0.5, 0.4),
-                },
-                need={"bayesian": 0.5, "python": 0.3, "paper_writing": 0.8},
+                capabilities=[
+                    _cap("bayesian statistics",    0.6, 0.4, source="meta"),
+                    _cap("python programming",     0.7, 0.35, source="meta"),
+                    _cap("academic paper writing", 0.5, 0.4, source="meta"),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.5),
+                    _need("python programming",     0.3),
+                    _need("academic paper writing", 0.8),
+                ],
             ),
             soft=SoftProfile(
                 availability="15h/week — also freelancing",
@@ -150,14 +190,18 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Dave: solid skills, timezone clash
         ExtendedProfile(
-            profile=UserProfile(
+            profile=UserState(
                 user_id="dave",
-                capability={
-                    "bayesian": Capability(0.85, 0.15),
-                    "python": Capability(0.75, 0.1),
-                    "paper_writing": Capability(0.6, 0.2),
-                },
-                need={"bayesian": 0.3, "python": 0.2, "paper_writing": 0.7},
+                capabilities=[
+                    _cap("bayesian statistics",    0.85, 0.15),
+                    _cap("python programming",     0.75, 0.1),
+                    _cap("academic paper writing", 0.6, 0.2),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.3),
+                    _need("python programming",     0.2),
+                    _need("academic paper writing", 0.7),
+                ],
             ),
             soft=SoftProfile(
                 availability="25h/week",
@@ -174,14 +218,18 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Eve: perfect skills but overcommitted
         ExtendedProfile(
-            profile=UserProfile(
+            profile=UserState(
                 user_id="eve",
-                capability={
-                    "bayesian": Capability(0.95, 0.05),
-                    "python": Capability(0.9, 0.05),
-                    "paper_writing": Capability(0.85, 0.1),
-                },
-                need={"bayesian": 0.1, "python": 0.1, "paper_writing": 0.3},
+                capabilities=[
+                    _cap("bayesian statistics",    0.95, 0.05),
+                    _cap("python programming",     0.9, 0.05),
+                    _cap("academic paper writing", 0.85, 0.1),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.1),
+                    _need("python programming",     0.1),
+                    _need("academic paper writing", 0.3),
+                ],
             ),
             soft=SoftProfile(
                 availability="5h/week — leading 2 other projects",
@@ -198,14 +246,18 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Frank: junior but enthusiastic and available
         ExtendedProfile(
-            profile=UserProfile(
+            profile=UserState(
                 user_id="frank",
-                capability={
-                    "bayesian": Capability(0.4, 0.3),
-                    "python": Capability(0.6, 0.25),
-                    "paper_writing": Capability(0.3, 0.35),
-                },
-                need={"bayesian": 0.9, "python": 0.5, "paper_writing": 0.9},
+                capabilities=[
+                    _cap("bayesian statistics",    0.4, 0.3, source="implicit"),
+                    _cap("python programming",     0.6, 0.25),
+                    _cap("academic paper writing", 0.3, 0.35, source="implicit"),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.9),
+                    _need("python programming",     0.5),
+                    _need("academic paper writing", 0.9),
+                ],
             ),
             soft=SoftProfile(
                 availability="40h/week — dedicated to this",
@@ -236,10 +288,10 @@ def build_agent_persona(ext: ExtendedProfile, role: str, task: Task) -> str:
     """
 
     cap_summary = ", ".join(
-        f"{d}: {c.mu:.1f}" for d, c in ext.profile.capability.items()
+        f"{c.description}: {c.mu:.1f}" for c in ext.profile.capabilities
     )
     need_summary = ", ".join(
-        f"{d}: {n:.1f}" for d, n in ext.profile.need.items()
+        f"{n.description}: {n.intensity:.1f}" for n in ext.profile.needs
     )
     priorities = "\n".join(f"  {i+1}. {p}" for i, p in enumerate(ext.soft.priorities))
 
@@ -329,12 +381,12 @@ class DreamSimulator:
     If API_KEY is not set, runs in mock mode with rule-based responses.
     """
 
-    def __init__(self, base_url, n_turns: int = 3, model: str = "openai/gpt-4o", temperature: float = 0.0):
+    def __init__(self, n_turns: int = 3, base_url: str = "", model: str = "openai/gpt-4o", temperature: float = 0.0):
         self.n_turns = n_turns
         self.model = model
         self.temperature = temperature
         self.base_url = base_url
-        self.api_url = f"{self.base_url}/chat/completions"
+        self.api_url = f"{self.base_url}/chat/completions" if base_url else ""
         self.mock_mode = not bool(API_KEY)
         if not self.mock_mode:
             if httpx is None:
@@ -659,9 +711,9 @@ class DreamSimulator:
 class RefinedCandidate:
     """Final output of Layer 3: candidate with both analytical and dream scores."""
     candidate_id: str
-    analytical_score: float     # M from Layer 2
-    S_cap: float
-    S_need: float
+    analytical_score: float     # match_score from Layer 2
+    s_cap: float
+    s_need: float
     dream_score: float          # overall_compatibility from dream sim
     combined_score: float       # weighted combination
     compatibility: dict         # full compatibility breakdown
@@ -725,14 +777,14 @@ class PlanningLayer:
             )
             scored.append((cand, result))
 
-        scored.sort(key=lambda x: x[1].M, reverse=True)
+        scored.sort(key=lambda x: x[1].match_score, reverse=True)
 
         print(f"  {'Candidate':<12} {'S_cap':>8} {'S_need':>8} {'M':>8}")
         print(f"  {'-'*40}")
-        for cand, result in scored:
-            marker = " ←" if scored.index((cand, result)) < self.top_k else ""
-            print(f"  {cand.user_id:<12} {result.S_cap:>8.4f} {result.S_need:>8.4f} "
-                  f"{result.M:>8.4f}{marker}")
+        for idx, (cand, result) in enumerate(scored):
+            marker = " ←" if idx < self.top_k else ""
+            print(f"  {cand.user_id:<12} {result.s_cap:>8.4f} {result.s_need:>8.4f} "
+                  f"{result.match_score:>8.4f}{marker}")
 
         top_k_candidates = scored[:self.top_k]
         print(f"\n  Top-{self.top_k} enter dream simulation.\n")
@@ -760,7 +812,7 @@ class PlanningLayer:
             dream_score = compat.get("overall_compatibility", 0.5)
 
             # Combined score
-            combined = (self.w_analytical * analytical_result.M
+            combined = (self.w_analytical * analytical_result.match_score
                         + self.w_dream * dream_score)
 
             print(f"\n    Compatibility scores:")
@@ -772,15 +824,15 @@ class PlanningLayer:
                   f"Risk: {compat.get('top_risk', 'N/A')}")
             print(f"    Synergy: {compat.get('top_synergy', 'N/A')}")
             print(f"    Recommendation: {compat.get('recommendation', 'N/A')}")
-            print(f"    Combined score: {self.w_analytical:.1f}×{analytical_result.M:.3f} + "
+            print(f"    Combined score: {self.w_analytical:.1f}×{analytical_result.match_score:.3f} + "
                   f"{self.w_dream:.1f}×{dream_score:.3f} = {combined:.4f}")
             print()
 
             refined.append(RefinedCandidate(
                 candidate_id=cand.user_id,
-                analytical_score=analytical_result.M,
-                S_cap=analytical_result.S_cap,
-                S_need=analytical_result.S_need,
+                analytical_score=analytical_result.match_score,
+                s_cap=analytical_result.s_cap,
+                s_need=analytical_result.s_need,
                 dream_score=dream_score,
                 combined_score=combined,
                 compatibility=compat,
@@ -800,7 +852,7 @@ class PlanningLayer:
         for rank, r in enumerate(top_n, 1):
             print(f"\n  #{rank} {r.candidate_id}")
             print(f"     Analytical M = {r.analytical_score:.4f} "
-                  f"(S_cap={r.S_cap:.2f}, S_need={r.S_need:.2f})")
+                  f"(S_cap={r.s_cap:.2f}, S_need={r.s_need:.2f})")
             print(f"     Dream score  = {r.dream_score:.2f}")
             print(f"     Combined     = {r.combined_score:.4f}")
             print(f"     Recommendation: {r.recommendation}")
