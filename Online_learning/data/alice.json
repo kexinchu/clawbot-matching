@@ -1,6 +1,19 @@
 {
   "user_id": "alice",
   "clearance_level": 0,
+  "soft_profile": {
+    "availability": "30h/week",
+    "timezone": "UTC-5 (EST)",
+    "deadline_pressure": "tight — submission in 3 months",
+    "collab_style": "sync-heavy, likes daily standups",
+    "communication": "concise, action-oriented",
+    "personality_notes": "Startup CTO, fast-paced, direct communicator, values efficiency over perfection",
+    "priorities": [
+      "hit NeurIPS deadline",
+      "solid Bayesian modeling",
+      "clean reproducible code"
+    ]
+  },
   "capabilities": [
     {"description": "bayesian statistics", "mu": 0.3, "sigma": 0.2, "source": "explicit"},
     {"description": "python programming",  "mu": 0.8, "sigma": 0.1, "source": "explicit"},

@@ -51,13 +51,13 @@ class TestProfileBuilding(unittest.TestCase):
         candidate = candidates[0]
 
         self.assertIsInstance(requester, dreaming.ExtendedProfile)
-        self.assertIsInstance(requester.profile, dreaming.UserProfile)
+        self.assertIsInstance(requester.profile, dreaming.UserState)
         self.assertIsInstance(requester.soft, dreaming.SoftProfile)
         self.assertEqual(requester.user_id, "alice")
         self.assertEqual(task.goal, "Build Bayesian churn model, target NeurIPS")
 
         self.assertIsInstance(candidate, dreaming.ExtendedProfile)
-        self.assertIsInstance(candidate.profile, dreaming.UserProfile)
+        self.assertIsInstance(candidate.profile, dreaming.UserState)
         self.assertIsInstance(candidate.soft, dreaming.SoftProfile)
         self.assertEqual(candidate.user_id, "bob")
         self.assertEqual(candidate.soft.availability, "20h/week")
@@ -104,3 +104,42 @@ class TestDreamConversation(unittest.TestCase):
         for key in ("time_energy", "priority_alignment", "collab_style", "personality_fit"):
             self.assertIn("score", compatibility[key])
             self.assertIn("reason", compatibility[key])
+
+
+class TestLayer3PipelineAdapter(unittest.TestCase):
+    def test_refines_mapping_pipeline_match_results(self):
+        requester, task, candidates = dreaming.create_test_candidates()
+        candidate = candidates[0]
+        layer3_output = [
+            dreaming.MappingMatchResult(
+                candidate_id=candidate.user_id,
+                match_score=0.82,
+                s_cap=0.9,
+                s_need=0.7,
+                w_c=0.6,
+                w_n=0.4,
+                sigma_gate=1,
+            )
+        ]
+
+        with mock.patch.object(dreaming, "API_KEY", ""):
+            simulator = dreaming.DreamSimulator(base_url="https://llm.example", n_turns=2)
+            planning = dreaming.PlanningLayer(
+                world_model=None,
+                dream_simulator=simulator,
+                top_k=1,
+                top_n=1,
+            )
+            refined = planning.run_from_layer3_output(
+                requester=requester,
+                task=task,
+                candidate_profiles=candidates,
+                layer3_output=layer3_output,
+                verbose=False,
+            )
+
+        self.assertEqual(len(refined), 1)
+        self.assertEqual(refined[0].candidate_id, candidate.user_id)
+        self.assertEqual(refined[0].analytical_score, 0.82)
+        self.assertGreaterEqual(refined[0].dream_score, 0.0)
+        self.assertGreater(len(refined[0].transcript), 0)

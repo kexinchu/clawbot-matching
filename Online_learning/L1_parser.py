@@ -33,6 +33,7 @@ Defaults:
   capability.sigma       → MatchConfig.sigma_init (1.0)
   capability.source      → "explicit"
   need.intensity         → 0.5
+  soft_profile           → None
   requirement.level      → 0.5
   requirement.constraint_type → "soft"
   offer.strength         → 0.5
@@ -91,6 +92,7 @@ def parse_user(data: Union[dict, str, Path]) -> UserState:
         capabilities=capabilities,
         needs=needs,
         clearance_level=int(data.get("clearance_level", 0)),
+        soft_profile=data.get("soft_profile"),
     )
 
 

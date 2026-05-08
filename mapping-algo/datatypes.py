@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
+import numpy as np 
 
 
 # ── Node state s_v = (Cap_v, Need_v) ──────────────────────────────────
@@ -44,6 +44,7 @@ class UserState:
     capabilities: List[CapabilityEntry] = field(default_factory=list)
     needs: List[NeedEntry] = field(default_factory=list)
     clearance_level: int = 0    # for gate check
+    soft_profile: Optional[Dict[str, Any]] = None
 
 
 # ── Task T = (G_T, Q_T, O_T) ─────────────────────────────────────────

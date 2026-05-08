@@ -1,6 +1,19 @@
 {
   "user_id": "bob",
   "clearance_level": 1,
+  "soft_profile": {
+    "availability": "20h/week",
+    "timezone": "UTC-5 (EST)",
+    "deadline_pressure": "moderate — also has coursework",
+    "collab_style": "mixed, prefers structured weekly meetings",
+    "communication": "detailed, likes to explain reasoning",
+    "personality_notes": "Stats PhD student, methodical, thorough, sometimes slow but high quality output",
+    "priorities": [
+      "first-author NeurIPS paper",
+      "learn industry data pipelines",
+      "build portfolio for job search"
+    ]
+  },
   "capabilities": [
     {"description": "bayesian statistics", "mu": 0.9, "sigma": 0.1, "source": "explicit"},
     {"description": "python programming",  "mu": 0.5, "sigma": 0.2, "source": "explicit"},

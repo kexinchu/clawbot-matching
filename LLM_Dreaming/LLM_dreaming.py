@@ -14,23 +14,105 @@ soft compatibility that the formula cannot capture:
 Outputs top-3 refined candidates with compatibility reports.
 """
 
+from __future__ import annotations
+
 import json
 import os
-import httpx
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+import sys
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from UserProfile import UserProfile
-from Capability import Capability
-from Task import Task
-from MatchResult import MatchResult
+import httpx
+
+_MAPPING_ALGO_DIR = os.path.join(os.path.dirname(os.path.getcwd()), "mapping-algo")
+if str(_MAPPING_ALGO_DIR) not in sys.path:
+    sys.path.append(str(_MAPPING_ALGO_DIR))
+
+from datatypes import (
+    CapabilityEntry,
+    MatchResult as MappingMatchResult,
+    NeedEntry,
+    Task as MappingTask,
+    TeamResult,
+    UserState,
+)
+
 from WorldModel import WorldModel
-from utils import dummy_create_task
+WorldModel = Any
+
+from encoder import SimpleEncoder
 
 # Set your API key via environment variable:
 #   export OPENAI_API_KEY="..."
 # If not set, runs in mock mode with synthetic conversations.
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+
+# ============================================================
+# Lightweight legacy demo types
+# ============================================================
+
+@dataclass
+class Capability:
+    """Small capability type kept for create_test_candidates() demos/tests."""
+    mu: float
+    sigma: float = 0.0
+
+
+@dataclass
+class UserProfile:
+    """Legacy scalar profile shape used by this module's synthetic examples."""
+    user_id: str
+    capability: Dict[str, Capability] = field(default_factory=dict)
+    need: Dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
+class Task:
+    """Legacy scalar task shape used by this module's synthetic examples."""
+    task_id: str
+    goal: str
+    Q_T: Dict[str, float] = field(default_factory=dict)
+
+
+_demo_encoder = SimpleEncoder(dim=64) if SimpleEncoder is not None else None
+
+
+def _embed_description(description: str):
+    if _demo_encoder is None:
+        return []
+    return _demo_encoder(description)
+
+
+def make_user_state(
+    user_id: str,
+    capability: Dict[str, Capability],
+    need: Dict[str, float],
+    clearance_level: int = 0,
+) -> UserState:
+    """Build the mapping-algo UserState shape from scalar demo inputs."""
+    return UserState(
+        user_id=user_id,
+        capabilities=[
+            CapabilityEntry(
+                embedding=_embed_description(name),
+                mu=cap.mu,
+                sigma=cap.sigma,
+                description=name,
+            )
+            for name, cap in capability.items()
+        ],
+        needs=[
+            NeedEntry(
+                embedding=_embed_description(name),
+                intensity=intensity,
+                description=name,
+            )
+            for name, intensity in need.items()
+        ],
+        clearance_level=clearance_level,
+    )
 
 
 # ============================================================
@@ -51,13 +133,116 @@ class SoftProfile:
 
 @dataclass
 class ExtendedProfile:
-    """UserProfile + SoftProfile for dream simulation."""
-    profile: UserProfile
+    """UserState/UserProfile + SoftProfile for dream simulation."""
+    profile: Union[UserProfile, UserState]
     soft: SoftProfile
 
     @property
     def user_id(self) -> str:
         return self.profile.user_id
+
+
+def default_soft_profile(user_id: str = "candidate") -> SoftProfile:
+    """Fallback when Layer 1/2 profiles do not yet carry soft attributes."""
+    return SoftProfile(
+        availability="unknown",
+        timezone="unknown",
+        deadline_pressure="unknown",
+        collab_style="unknown",
+        communication="unknown",
+        personality_notes=f"No soft profile has been provided for {user_id}.",
+        priorities=["clarify availability", "clarify collaboration style", "clarify priorities"],
+    )
+
+
+def soft_profile_from_dict(data: Optional[dict], user_id: str = "candidate") -> SoftProfile:
+    """Build a SoftProfile from optional UserState.soft_profile metadata."""
+    if not data:
+        return default_soft_profile(user_id)
+
+    fallback = default_soft_profile(user_id)
+    return SoftProfile(
+        availability=data.get("availability", fallback.availability),
+        timezone=data.get("timezone", fallback.timezone),
+        deadline_pressure=data.get("deadline_pressure", fallback.deadline_pressure),
+        collab_style=data.get("collab_style", fallback.collab_style),
+        communication=data.get("communication", fallback.communication),
+        personality_notes=data.get("personality_notes", fallback.personality_notes),
+        priorities=list(data.get("priorities", fallback.priorities)),
+    )
+
+
+def ensure_extended_profile(
+    profile: Union[ExtendedProfile, UserProfile, UserState],
+    soft_profile: Optional[SoftProfile] = None,
+) -> ExtendedProfile:
+    """Normalize legacy profiles or mapping-algo UserState objects for dreaming."""
+    if isinstance(profile, ExtendedProfile):
+        return profile
+
+    user_id = getattr(profile, "user_id", "unknown")
+    if soft_profile is None:
+        soft_profile = soft_profile_from_dict(
+            getattr(profile, "soft_profile", None),
+            user_id,
+        )
+
+    return ExtendedProfile(
+        profile=profile,
+        soft=soft_profile,
+    )
+
+
+def _capability_summary(profile: Union[UserProfile, UserState]) -> str:
+    if hasattr(profile, "capability"):
+        items = getattr(profile, "capability").items()
+        return ", ".join(f"{name}: {cap.mu:.1f}" for name, cap in items) or "none"
+
+    capabilities = getattr(profile, "capabilities", [])
+    return ", ".join(
+        f"{cap.description or 'capability'}: {cap.mu:.1f}"
+        for cap in capabilities
+    ) or "none"
+
+
+def _need_summary(profile: Union[UserProfile, UserState]) -> str:
+    if hasattr(profile, "need"):
+        items = getattr(profile, "need").items()
+        return ", ".join(f"{name}: {need:.1f}" for name, need in items) or "none"
+
+    needs = getattr(profile, "needs", [])
+    return ", ".join(
+        f"{need.description or 'need'}: {need.intensity:.1f}"
+        for need in needs
+    ) or "none"
+
+
+def _score_attr(result: Any, new_name: str, old_name: str) -> float:
+    if hasattr(result, new_name):
+        return float(getattr(result, new_name))
+    if hasattr(result, old_name):
+        return float(getattr(result, old_name))
+    raise AttributeError(f"Match result is missing '{new_name}'/'{old_name}'")
+
+
+def _candidate_id_from_result(result: Any) -> str:
+    if hasattr(result, "candidate_id"):
+        return str(result.candidate_id)
+    if hasattr(result, "user_id"):
+        return str(result.user_id)
+    raise AttributeError("Layer 3 result is missing candidate_id")
+
+
+def _extract_layer3_match_results(layer3_output: Any) -> List[Any]:
+    """Accept match_one_to_one output or match_one_to_n TeamResult output."""
+    if hasattr(layer3_output, "per_member"):
+        return list(layer3_output.per_member)
+    if isinstance(layer3_output, dict):
+        per_member = layer3_output.get("per_member")
+        if per_member is not None:
+            return list(per_member)
+        return list(layer3_output.get("results", []))
+    return list(layer3_output)
 
 
 # ============================================================
@@ -77,7 +262,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
     )
 
     alice = ExtendedProfile(
-        profile=UserProfile(
+        profile=make_user_state(
             user_id="alice",
             capability={
                 "bayesian": Capability(0.3, 0.2),
@@ -102,7 +287,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
     candidates = [
         # Bob: strong match analytically, good soft fit
         ExtendedProfile(
-            profile=UserProfile(
+            profile=make_user_state(
                 user_id="bob",
                 capability={
                     "bayesian": Capability(0.9, 0.1),
@@ -126,7 +311,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Carol: high uncertainty, creative but chaotic
         ExtendedProfile(
-            profile=UserProfile(
+            profile=make_user_state(
                 user_id="carol",
                 capability={
                     "bayesian": Capability(0.6, 0.4),
@@ -150,7 +335,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Dave: solid skills, timezone clash
         ExtendedProfile(
-            profile=UserProfile(
+            profile=make_user_state(
                 user_id="dave",
                 capability={
                     "bayesian": Capability(0.85, 0.15),
@@ -174,7 +359,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Eve: perfect skills but overcommitted
         ExtendedProfile(
-            profile=UserProfile(
+            profile=make_user_state(
                 user_id="eve",
                 capability={
                     "bayesian": Capability(0.95, 0.05),
@@ -198,7 +383,7 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
 
         # Frank: junior but enthusiastic and available
         ExtendedProfile(
-            profile=UserProfile(
+            profile=make_user_state(
                 user_id="frank",
                 capability={
                     "bayesian": Capability(0.4, 0.3),
@@ -235,12 +420,8 @@ def build_agent_persona(ext: ExtendedProfile, role: str, task: Task) -> str:
     role: 'requester' or 'candidate'
     """
 
-    cap_summary = ", ".join(
-        f"{d}: {c.mu:.1f}" for d, c in ext.profile.capability.items()
-    )
-    need_summary = ", ".join(
-        f"{d}: {n:.1f}" for d, n in ext.profile.need.items()
-    )
+    cap_summary = _capability_summary(ext.profile)
+    need_summary = _need_summary(ext.profile)
     priorities = "\n".join(f"  {i+1}. {p}" for i, p in enumerate(ext.soft.priorities))
 
     if role == "requester":
@@ -615,7 +796,6 @@ class DreamSimulator:
             if turn < self.n_turns - 1:
                 req_reply = self._call_llm(sys_requester, messages_req)
                 transcript.append({"role": f"agent_{requester.user_id}", "text": req_reply})
-
                 messages_req.append({"role": "assistant", "content": req_reply})
                 messages_cand.append({"role": "user", "content": req_reply})
 
@@ -668,6 +848,7 @@ class RefinedCandidate:
     top_risk: str
     top_synergy: str
     recommendation: str
+    transcript: List[dict] = field(default_factory=list)
 
 
 class PlanningLayer:
@@ -701,6 +882,120 @@ class PlanningLayer:
         self.w_analytical = analytical_weight
         self.w_dream = dream_weight
 
+    def run_from_layer3_output(
+        self,
+        requester: Union[ExtendedProfile, UserProfile, UserState],
+        task: Union[Task, MappingTask],
+        candidate_profiles: Union[
+            Dict[str, Union[ExtendedProfile, UserProfile, UserState]],
+            List[Union[ExtendedProfile, UserProfile, UserState]],
+        ],
+        layer3_output: Any,
+        requester_soft_profile: Optional[SoftProfile] = None,
+        candidate_soft_profiles: Optional[Dict[str, SoftProfile]] = None,
+        verbose: bool = True,
+    ) -> List[RefinedCandidate]:
+        """
+        Consume output from mapping-algo/pipeline.py, simulate conversations,
+        and return top-N candidates after soft-profile refinement.
+
+        layer3_output can be:
+          - List[MatchResult] from match_one_to_one(...)
+          - TeamResult from match_one_to_n(...)
+          - a dict with "per_member" or "results"
+
+        candidate_profiles must contain the selected candidates' UserState or
+        ExtendedProfile records because MatchResult only carries candidate_id.
+        """
+        requester_ext = ensure_extended_profile(requester, requester_soft_profile)
+        candidate_soft_profiles = candidate_soft_profiles or {}
+
+        if isinstance(candidate_profiles, dict):
+            candidates_by_id = {
+                user_id: ensure_extended_profile(profile, candidate_soft_profiles.get(user_id))
+                for user_id, profile in candidate_profiles.items()
+            }
+        else:
+            candidates_by_id = {}
+            for profile in candidate_profiles:
+                profile_id = getattr(profile, "user_id", getattr(getattr(profile, "profile", None), "user_id", ""))
+                candidates_by_id[profile_id] = ensure_extended_profile(
+                    profile,
+                    candidate_soft_profiles.get(profile_id),
+                )
+
+        match_results = _extract_layer3_match_results(layer3_output)[:self.top_k]
+
+        if verbose:
+            print("=" * 60)
+            print("LAYER 3: DREAM REFINEMENT FROM PIPELINE OUTPUT")
+            print("=" * 60)
+            print(f"\n[Input] {len(match_results)} selected candidates enter dream simulation.\n")
+
+        refined = []
+        for i, analytical_result in enumerate(match_results):
+            candidate_id = _candidate_id_from_result(analytical_result)
+            if candidate_id not in candidates_by_id:
+                raise ValueError(
+                    f"Missing profile for selected candidate '{candidate_id}'. "
+                    "Pass candidate_profiles as a list/dict containing every Layer 3 candidate."
+                )
+
+            candidate_ext = candidates_by_id[candidate_id]
+            if verbose:
+                print(f"  --- Dream {i+1}/{len(match_results)}: "
+                      f"{requester_ext.user_id} ↔ {candidate_ext.user_id} ---")
+
+            dream_result = self.dreamer.simulate_conversation(
+                requester_ext,
+                candidate_ext,
+                task,
+            )
+            compat = dream_result["compatibility"]
+            dream_score = float(compat.get("overall_compatibility", 0.5))
+            analytical_score = _score_attr(analytical_result, "match_score", "M")
+            s_cap = _score_attr(analytical_result, "s_cap", "S_cap")
+            s_need = _score_attr(analytical_result, "s_need", "S_need")
+            combined = self.w_analytical * analytical_score + self.w_dream * dream_score
+
+            if verbose:
+                print(f"    Analytical M: {analytical_score:.4f}")
+                print(f"    Dream score : {dream_score:.2f}")
+                print(f"    Combined    : {combined:.4f}")
+                print(f"    Recommendation: {compat.get('recommendation', 'N/A')}")
+                print()
+
+            refined.append(RefinedCandidate(
+                candidate_id=candidate_id,
+                analytical_score=analytical_score,
+                S_cap=s_cap,
+                S_need=s_need,
+                dream_score=dream_score,
+                combined_score=combined,
+                compatibility=compat,
+                top_risk=compat.get("top_risk", ""),
+                top_synergy=compat.get("top_synergy", ""),
+                recommendation=compat.get("recommendation", ""),
+                transcript=dream_result.get("transcript", []),
+            ))
+
+        refined.sort(key=lambda x: x.combined_score, reverse=True)
+        top_n = refined[:self.top_n]
+
+        if verbose:
+            print("=" * 60)
+            print(f"FINAL OUTPUT: Top-{self.top_n} Candidates")
+            print("=" * 60)
+            for rank, r in enumerate(top_n, 1):
+                print(f"\n  #{rank} {r.candidate_id}")
+                print(f"     Analytical M = {r.analytical_score:.4f} "
+                      f"(S_cap={r.S_cap:.2f}, S_need={r.S_need:.2f})")
+                print(f"     Dream score  = {r.dream_score:.2f}")
+                print(f"     Combined     = {r.combined_score:.4f}")
+                print(f"     Recommendation: {r.recommendation}")
+
+        return top_n
+
     def run(
         self,
         requester: ExtendedProfile,
@@ -710,6 +1005,11 @@ class PlanningLayer:
         """
         Full Layer 3 pipeline.
         """
+        if self.world_model is None:
+            raise ValueError(
+                "PlanningLayer.run() requires a world_model. If you already have "
+                "output from mapping-algo/pipeline.py, use run_from_layer3_output()."
+            )
 
         print("=" * 60)
         print("LAYER 3: PLANNING — COARSE FILTER + DREAM SIMULATION")
@@ -725,14 +1025,15 @@ class PlanningLayer:
             )
             scored.append((cand, result))
 
-        scored.sort(key=lambda x: x[1].M, reverse=True)
+        scored.sort(key=lambda x: _score_attr(x[1], "match_score", "M"), reverse=True)
 
         print(f"  {'Candidate':<12} {'S_cap':>8} {'S_need':>8} {'M':>8}")
         print(f"  {'-'*40}")
         for cand, result in scored:
             marker = " ←" if scored.index((cand, result)) < self.top_k else ""
-            print(f"  {cand.user_id:<12} {result.S_cap:>8.4f} {result.S_need:>8.4f} "
-                  f"{result.M:>8.4f}{marker}")
+            print(f"  {cand.user_id:<12} {_score_attr(result, 's_cap', 'S_cap'):>8.4f} "
+                  f"{_score_attr(result, 's_need', 'S_need'):>8.4f} "
+                  f"{_score_attr(result, 'match_score', 'M'):>8.4f}{marker}")
 
         top_k_candidates = scored[:self.top_k]
         print(f"\n  Top-{self.top_k} enter dream simulation.\n")
@@ -758,9 +1059,12 @@ class PlanningLayer:
 
             compat = dream_result["compatibility"]
             dream_score = compat.get("overall_compatibility", 0.5)
+            analytical_score = _score_attr(analytical_result, "match_score", "M")
+            s_cap = _score_attr(analytical_result, "s_cap", "S_cap")
+            s_need = _score_attr(analytical_result, "s_need", "S_need")
 
             # Combined score
-            combined = (self.w_analytical * analytical_result.M
+            combined = (self.w_analytical * analytical_score
                         + self.w_dream * dream_score)
 
             print(f"\n    Compatibility scores:")
@@ -772,21 +1076,22 @@ class PlanningLayer:
                   f"Risk: {compat.get('top_risk', 'N/A')}")
             print(f"    Synergy: {compat.get('top_synergy', 'N/A')}")
             print(f"    Recommendation: {compat.get('recommendation', 'N/A')}")
-            print(f"    Combined score: {self.w_analytical:.1f}×{analytical_result.M:.3f} + "
+            print(f"    Combined score: {self.w_analytical:.1f}×{analytical_score:.3f} + "
                   f"{self.w_dream:.1f}×{dream_score:.3f} = {combined:.4f}")
             print()
 
             refined.append(RefinedCandidate(
                 candidate_id=cand.user_id,
-                analytical_score=analytical_result.M,
-                S_cap=analytical_result.S_cap,
-                S_need=analytical_result.S_need,
+                analytical_score=analytical_score,
+                S_cap=s_cap,
+                S_need=s_need,
                 dream_score=dream_score,
                 combined_score=combined,
                 compatibility=compat,
                 top_risk=compat.get("top_risk", ""),
                 top_synergy=compat.get("top_synergy", ""),
                 recommendation=compat.get("recommendation", ""),
+                transcript=dream_result.get("transcript", []),
             ))
 
         # ---- Final ranking ----
