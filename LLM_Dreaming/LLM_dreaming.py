@@ -2,7 +2,7 @@
 MBRL Matching System — Layer 3: LLM Dream Simulation
 =====================================================
 
-After Layer 2 analytical ranking (greedy + UCB), this module
+After Layer 3 analytical ranking (greedy + UCB), this module
 simulates agent-agent conversations for top-K candidates to assess
 soft compatibility that the formula cannot capture:
 
@@ -39,7 +39,6 @@ from datatypes import (
 )
 
 from WorldModel import WorldModel
-WorldModel = Any
 
 from encoder import SimpleEncoder
 

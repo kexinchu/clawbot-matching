@@ -123,9 +123,9 @@ class TestLayer3PipelineAdapter(unittest.TestCase):
         ]
 
         with mock.patch.object(dreaming, "API_KEY", ""):
-            simulator = dreaming.DreamSimulator(base_url="https://llm.example", n_turns=2)
+            simulator = dreaming.DreamSimulator(base_url="https://api.commonstack.ai/v1", n_turns=2)
             planning = dreaming.PlanningLayer(
-                world_model=None,
+                world_model=world_model,
                 dream_simulator=simulator,
                 top_k=1,
                 top_n=1,
