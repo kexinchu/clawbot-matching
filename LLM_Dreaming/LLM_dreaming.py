@@ -43,7 +43,7 @@ from WorldModel import WorldModel
 from encoder import SimpleEncoder
 
 # Set your API key via environment variable:
-#   export OPENAI_API_KEY="..."
+#   export ANTHROPIC_API_KEY="sk-ant-..."
 # If not set, runs in mock mode with synthetic conversations.
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
@@ -257,18 +257,30 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
     task = Task(
         task_id="task_001",
         goal="Build Bayesian churn model, target NeurIPS",
-        Q_T={"bayesian": 0.8, "python": 0.6, "paper_writing": 0.7}
+        requirements=[
+            TaskRequirement(_enc("bayesian statistics"),    level=0.8, constraint_type="soft", description="bayesian"),
+            TaskRequirement(_enc("python programming"),     level=0.6, constraint_type="soft", description="python"),
+            TaskRequirement(_enc("academic paper writing"), level=0.7, constraint_type="soft", description="paper_writing"),
+        ],
+        offers=[
+            TaskOffer(_enc("research collaboration"), strength=0.8, source="explicit", description="research collaboration"),
+            TaskOffer(_enc("academic authorship"),    strength=0.7, source="explicit", description="co-authorship"),
+        ],
     )
 
     alice = ExtendedProfile(
         profile=make_user_state(
             user_id="alice",
-            capability={
-                "bayesian": Capability(0.3, 0.2),
-                "python": Capability(0.8, 0.1),
-                "paper_writing": Capability(0.4, 0.3),
-            },
-            need={"bayesian": 0.8, "python": 0.1, "paper_writing": 0.7},
+            capabilities=[
+                _cap("bayesian statistics",    0.3, 0.2),
+                _cap("python programming",     0.8, 0.1),
+                _cap("academic paper writing", 0.4, 0.3, source="implicit"),
+            ],
+            needs=[
+                _need("bayesian statistics mentorship", 0.8),
+                _need("python programming",             0.1),
+                _need("academic paper writing",         0.7),
+            ],
         ),
         soft=SoftProfile(
             availability="30h/week",
@@ -288,12 +300,16 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
         ExtendedProfile(
             profile=make_user_state(
                 user_id="bob",
-                capability={
-                    "bayesian": Capability(0.9, 0.1),
-                    "python": Capability(0.5, 0.2),
-                    "paper_writing": Capability(0.8, 0.1),
-                },
-                need={"bayesian": 0.2, "python": 0.7, "paper_writing": 0.9},
+                capabilities=[
+                    _cap("bayesian statistics",    0.9, 0.1),
+                    _cap("python programming",     0.5, 0.2),
+                    _cap("academic paper writing", 0.8, 0.1),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.2),
+                    _need("python programming",     0.7),
+                    _need("academic paper writing", 0.9),
+                ],
             ),
             soft=SoftProfile(
                 availability="20h/week",
@@ -312,12 +328,16 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
         ExtendedProfile(
             profile=make_user_state(
                 user_id="carol",
-                capability={
-                    "bayesian": Capability(0.6, 0.4),
-                    "python": Capability(0.7, 0.35),
-                    "paper_writing": Capability(0.5, 0.4),
-                },
-                need={"bayesian": 0.5, "python": 0.3, "paper_writing": 0.8},
+                capabilities=[
+                    _cap("bayesian statistics",    0.6, 0.4, source="meta"),
+                    _cap("python programming",     0.7, 0.35, source="meta"),
+                    _cap("academic paper writing", 0.5, 0.4, source="meta"),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.5),
+                    _need("python programming",     0.3),
+                    _need("academic paper writing", 0.8),
+                ],
             ),
             soft=SoftProfile(
                 availability="15h/week — also freelancing",
@@ -336,12 +356,16 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
         ExtendedProfile(
             profile=make_user_state(
                 user_id="dave",
-                capability={
-                    "bayesian": Capability(0.85, 0.15),
-                    "python": Capability(0.75, 0.1),
-                    "paper_writing": Capability(0.6, 0.2),
-                },
-                need={"bayesian": 0.3, "python": 0.2, "paper_writing": 0.7},
+                capabilities=[
+                    _cap("bayesian statistics",    0.85, 0.15),
+                    _cap("python programming",     0.75, 0.1),
+                    _cap("academic paper writing", 0.6, 0.2),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.3),
+                    _need("python programming",     0.2),
+                    _need("academic paper writing", 0.7),
+                ],
             ),
             soft=SoftProfile(
                 availability="25h/week",
@@ -360,12 +384,16 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
         ExtendedProfile(
             profile=make_user_state(
                 user_id="eve",
-                capability={
-                    "bayesian": Capability(0.95, 0.05),
-                    "python": Capability(0.9, 0.05),
-                    "paper_writing": Capability(0.85, 0.1),
-                },
-                need={"bayesian": 0.1, "python": 0.1, "paper_writing": 0.3},
+                capabilities=[
+                    _cap("bayesian statistics",    0.95, 0.05),
+                    _cap("python programming",     0.9, 0.05),
+                    _cap("academic paper writing", 0.85, 0.1),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.1),
+                    _need("python programming",     0.1),
+                    _need("academic paper writing", 0.3),
+                ],
             ),
             soft=SoftProfile(
                 availability="5h/week — leading 2 other projects",
@@ -384,12 +412,16 @@ def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfil
         ExtendedProfile(
             profile=make_user_state(
                 user_id="frank",
-                capability={
-                    "bayesian": Capability(0.4, 0.3),
-                    "python": Capability(0.6, 0.25),
-                    "paper_writing": Capability(0.3, 0.35),
-                },
-                need={"bayesian": 0.9, "python": 0.5, "paper_writing": 0.9},
+                capabilities=[
+                    _cap("bayesian statistics",    0.4, 0.3, source="implicit"),
+                    _cap("python programming",     0.6, 0.25),
+                    _cap("academic paper writing", 0.3, 0.35, source="implicit"),
+                ],
+                needs=[
+                    _need("bayesian statistics",    0.9),
+                    _need("python programming",     0.5),
+                    _need("academic paper writing", 0.9),
+                ],
             ),
             soft=SoftProfile(
                 availability="40h/week — dedicated to this",
@@ -509,12 +541,12 @@ class DreamSimulator:
     If API_KEY is not set, runs in mock mode with rule-based responses.
     """
 
-    def __init__(self, base_url, n_turns: int = 3, model: str = "openai/gpt-4o", temperature: float = 0.0):
+    def __init__(self, n_turns: int = 3, base_url: str = "", model: str = "openai/gpt-4o", temperature: float = 0.0):
         self.n_turns = n_turns
         self.model = model
         self.temperature = temperature
         self.base_url = base_url
-        self.api_url = f"{self.base_url}/chat/completions"
+        self.api_url = f"{self.base_url}/chat/completions" if base_url else ""
         self.mock_mode = not bool(API_KEY)
         if not self.mock_mode:
             if httpx is None:
@@ -838,9 +870,9 @@ class DreamSimulator:
 class RefinedCandidate:
     """Final output of Layer 3: candidate with both analytical and dream scores."""
     candidate_id: str
-    analytical_score: float     # M from Layer 2
-    S_cap: float
-    S_need: float
+    analytical_score: float     # match_score from Layer 2
+    s_cap: float
+    s_need: float
     dream_score: float          # overall_compatibility from dream sim
     combined_score: float       # weighted combination
     compatibility: dict         # full compatibility breakdown
@@ -1104,7 +1136,7 @@ class PlanningLayer:
         for rank, r in enumerate(top_n, 1):
             print(f"\n  #{rank} {r.candidate_id}")
             print(f"     Analytical M = {r.analytical_score:.4f} "
-                  f"(S_cap={r.S_cap:.2f}, S_need={r.S_need:.2f})")
+                  f"(S_cap={r.s_cap:.2f}, S_need={r.s_need:.2f})")
             print(f"     Dream score  = {r.dream_score:.2f}")
             print(f"     Combined     = {r.combined_score:.4f}")
             print(f"     Recommendation: {r.recommendation}")

@@ -7,23 +7,28 @@ from WorldModel import WorldModel
 from Reward_function import RewardFunction
 from Parameter_update import BayesianUpdater, WeightUpdater, UCBExplorer
 from typing import List, Optional
-from ol_utils import dummy_user_feedback
+from feedback_provider import FeedbackProvider, DummyFeedback
 
 
 class OnlineLearning:
     """
     Orchestrates the full Layer 5 learning loop:
       1. Compute match score (Layer 2, via WorldModel → scoring.py)
-      2. Simulate/collect feedback (Layer 4)
-      3. Compute reward R
+      2. Collect feedback (Layer 4) from a pluggable FeedbackProvider
+      3. Compute reward R (Layer 5.1) — original formula preserved
       4. Update parameters via three paths:
            Path 1 — Bayesian update (μ, σ) per capability
            Path 2 — Weight SGD (θ → w_c, w_n)
            Path 3 — UCB state tracking
     """
 
-    def __init__(self, world_model: WorldModel):
+    def __init__(
+        self,
+        world_model: WorldModel,
+        feedback_provider: Optional[FeedbackProvider] = None,
+    ):
         self.world_model = world_model
+        self.feedback_provider = feedback_provider or DummyFeedback()
         self.reward_fn = RewardFunction()
         self.bayesian_updater = BayesianUpdater()
         self.weight_updater = WeightUpdater()
@@ -69,7 +74,12 @@ class OnlineLearning:
         )
 
         # --- Layer 4: Collect feedback ---
-        feedback = feedback_override if feedback_override else dummy_user_feedback(match_no_ucb)
+        if feedback_override:
+            feedback = feedback_override
+        else:
+            feedback = self.feedback_provider.collect(
+                requester, candidate, task, match_no_ucb
+            )
 
         # --- Layer 5.1: Compute reward ---
         reward = self.reward_fn.compute(feedback)
