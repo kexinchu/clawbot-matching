@@ -23,24 +23,34 @@ from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import httpx
+try:
+    import httpx  # pyright: ignore[reportMissingImports]
+except ImportError:
+    httpx = None
 
-_MAPPING_ALGO_DIR = os.path.join(os.path.dirname(os.path.getcwd()), "mapping-algo")
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_MAPPING_ALGO_DIR = _REPO_ROOT / "mapping-algo"
+_ONLINE_LEARNING_DIR = _REPO_ROOT / "Online_learning"
 if str(_MAPPING_ALGO_DIR) not in sys.path:
     sys.path.append(str(_MAPPING_ALGO_DIR))
+if str(_ONLINE_LEARNING_DIR) not in sys.path:
+    sys.path.append(str(_ONLINE_LEARNING_DIR))
 
-from datatypes import (
+from datatypes import (  # pyright: ignore[reportMissingImports]
     CapabilityEntry,
     MatchResult as MappingMatchResult,
     NeedEntry,
     Task as MappingTask,
+    TaskOffer,
+    TaskRequirement,
     TeamResult,
     UserState,
 )
 
-from WorldModel import WorldModel
+from config import MatchConfig  # pyright: ignore[reportMissingImports]
+from WorldModel import WorldModel  # pyright: ignore[reportMissingImports]
 
-from encoder import SimpleEncoder
+from encoder import SimpleEncoder  # pyright: ignore[reportMissingImports]
 
 # Set your API key via environment variable:
 #   export ANTHROPIC_API_KEY="sk-ant-..."
@@ -73,6 +83,9 @@ class Task:
     task_id: str
     goal: str
     Q_T: Dict[str, float] = field(default_factory=dict)
+    requirements: List[TaskRequirement] = field(default_factory=list)
+    offers: List[TaskOffer] = field(default_factory=list)
+    data_clearance: int = 0
 
 
 _demo_encoder = SimpleEncoder(dim=64) if SimpleEncoder is not None else None
@@ -84,32 +97,49 @@ def _embed_description(description: str):
     return _demo_encoder(description)
 
 
+def _enc(description: str):
+    return _embed_description(description)
+
+
+def _cap(description: str, mu: float, sigma: float, source: str = "explicit") -> CapabilityEntry:
+    return CapabilityEntry(
+        embedding=_embed_description(description),
+        mu=mu,
+        sigma=sigma,
+        source=source,
+        description=description,
+    )
+
+
+def _need(description: str, intensity: float) -> NeedEntry:
+    return NeedEntry(
+        embedding=_embed_description(description),
+        intensity=intensity,
+        description=description,
+    )
+
+
 def make_user_state(
     user_id: str,
-    capability: Dict[str, Capability],
-    need: Dict[str, float],
+    capability: Optional[Dict[str, Capability]] = None,
+    need: Optional[Dict[str, float]] = None,
+    capabilities: Optional[List[CapabilityEntry]] = None,
+    needs: Optional[List[NeedEntry]] = None,
     clearance_level: int = 0,
 ) -> UserState:
     """Build the mapping-algo UserState shape from scalar demo inputs."""
+    capabilities = capabilities or [
+        _cap(name, cap.mu, cap.sigma)
+        for name, cap in (capability or {}).items()
+    ]
+    needs = needs or [
+        _need(name, intensity)
+        for name, intensity in (need or {}).items()
+    ]
     return UserState(
         user_id=user_id,
-        capabilities=[
-            CapabilityEntry(
-                embedding=_embed_description(name),
-                mu=cap.mu,
-                sigma=cap.sigma,
-                description=name,
-            )
-            for name, cap in capability.items()
-        ],
-        needs=[
-            NeedEntry(
-                embedding=_embed_description(name),
-                intensity=intensity,
-                description=name,
-            )
-            for name, intensity in need.items()
-        ],
+        capabilities=capabilities,
+        needs=needs,
         clearance_level=clearance_level,
     )
 
@@ -999,8 +1029,8 @@ class PlanningLayer:
             refined.append(RefinedCandidate(
                 candidate_id=candidate_id,
                 analytical_score=analytical_score,
-                S_cap=s_cap,
-                S_need=s_need,
+                s_cap=s_cap,
+                s_need=s_need,
                 dream_score=dream_score,
                 combined_score=combined,
                 compatibility=compat,
@@ -1020,7 +1050,7 @@ class PlanningLayer:
             for rank, r in enumerate(top_n, 1):
                 print(f"\n  #{rank} {r.candidate_id}")
                 print(f"     Analytical M = {r.analytical_score:.4f} "
-                      f"(S_cap={r.S_cap:.2f}, S_need={r.S_need:.2f})")
+                      f"(S_cap={r.s_cap:.2f}, S_need={r.s_need:.2f})")
                 print(f"     Dream score  = {r.dream_score:.2f}")
                 print(f"     Combined     = {r.combined_score:.4f}")
                 print(f"     Recommendation: {r.recommendation}")
@@ -1114,8 +1144,8 @@ class PlanningLayer:
             refined.append(RefinedCandidate(
                 candidate_id=cand.user_id,
                 analytical_score=analytical_score,
-                S_cap=s_cap,
-                S_need=s_need,
+                s_cap=s_cap,
+                s_need=s_need,
                 dream_score=dream_score,
                 combined_score=combined,
                 compatibility=compat,

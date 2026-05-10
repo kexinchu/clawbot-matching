@@ -6,23 +6,33 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+_MAPPING_ALGO_DIR = Path(__file__).resolve().parents[1] / "mapping-algo"
+if str(_MAPPING_ALGO_DIR) not in sys.path:
+    sys.path.append(str(_MAPPING_ALGO_DIR))
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ONLINE_LEARNING_DIR = REPO_ROOT / "Online_learning"
 
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(ONLINE_LEARNING_DIR))
+from config import MatchConfig
+from WorldModel import WorldModel
 
-import LLM_Dreaming.LLM_dreaming as dreaming  # noqa: E402
+cfg = MatchConfig(embedding_dim=64)
+world_model = WorldModel(theta_c=0.4, theta_n=-0.1, config=cfg)
+
+import LLM_Dreaming.LLM_dreaming as dreaming
+
+BASE_URL = "https://api.commonstack.ai/v1"
 
 
 class TestDreamSimulatorLoading(unittest.TestCase):
     def test_uses_mock_mode_without_api_key(self):
         with mock.patch.object(dreaming, "API_KEY", ""):
-            simulator = dreaming.DreamSimulator(base_url="https://llm.example")
+            simulator = dreaming.DreamSimulator(base_url=BASE_URL)
 
         self.assertTrue(simulator.mock_mode)
-        self.assertEqual(simulator.api_url, "https://llm.example/chat/completions")
+        self.assertEqual(simulator.api_url, "https://api.commonstack.ai/v1/chat/completions")
         self.assertFalse(hasattr(simulator, "client"))
 
     def test_creates_http_client_when_api_key_is_present(self):
@@ -38,7 +48,7 @@ class TestDreamSimulatorLoading(unittest.TestCase):
         with mock.patch.object(dreaming, "API_KEY", "test-key"):
             fake_httpx = types.SimpleNamespace(Client=fake_client)
             with mock.patch.object(dreaming, "httpx", fake_httpx):
-                simulator = dreaming.DreamSimulator(base_url="https://llm.example")
+                simulator = dreaming.DreamSimulator(base_url=BASE_URL)
 
         self.assertFalse(simulator.mock_mode)
         self.assertIsInstance(simulator.client, DummyClient)
@@ -84,7 +94,7 @@ class TestDreamConversation(unittest.TestCase):
         candidate = candidates[0]
 
         with mock.patch.object(dreaming, "API_KEY", ""):
-            simulator = dreaming.DreamSimulator(base_url="https://llm.example", n_turns=3)
+            simulator = dreaming.DreamSimulator(base_url=BASE_URL, n_turns=3)
             result = simulator.simulate_conversation(requester, candidate, task)
 
         self.assertEqual(result["candidate_id"], candidate.user_id)
@@ -123,7 +133,7 @@ class TestLayer3PipelineAdapter(unittest.TestCase):
         ]
 
         with mock.patch.object(dreaming, "API_KEY", ""):
-            simulator = dreaming.DreamSimulator(base_url="https://api.commonstack.ai/v1", n_turns=2)
+            simulator = dreaming.DreamSimulator(base_url=BASE_URL, n_turns=2)
             planning = dreaming.PlanningLayer(
                 world_model=world_model,
                 dream_simulator=simulator,
