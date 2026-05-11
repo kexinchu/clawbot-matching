@@ -8,6 +8,10 @@ The LLM-based path is wired but gated behind a backend type check.
 """
 from __future__ import annotations
 
+import json
+from dataclasses import asdict
+from pathlib import Path
+
 from simulator.config import SimulatorConfig
 from simulator.llm_backend import BaseBackend
 from simulator.mock_backend import RuleBasedBackend
@@ -161,3 +165,30 @@ class RequesterPersonaGenerator(PersonaGenerator):
 class CandidatePersonaGenerator(PersonaGenerator):
     def __init__(self, backend: BaseBackend, config: SimulatorConfig):
         super().__init__(backend, config, SideType.CANDIDATE)
+
+
+def save_persona_bundle(
+    context: MatchingContext,
+    backend: BaseBackend,
+    config: SimulatorConfig,
+    output_path: str | Path,
+) -> dict[str, list[dict]]:
+    """
+    Generate requester/candidate personas and save them as JSON.
+
+    The output JSON contains two top-level arrays:
+      - requester_personas
+      - candidate_personas
+    """
+    requester_personas = RequesterPersonaGenerator(backend, config).generate(context)
+    candidate_personas = CandidatePersonaGenerator(backend, config).generate(context)
+
+    payload = {
+        "requester_personas": [asdict(persona) for persona in requester_personas],
+        "candidate_personas": [asdict(persona) for persona in candidate_personas],
+    }
+
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return payload

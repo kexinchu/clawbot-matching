@@ -31,6 +31,7 @@ except ImportError:
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _MAPPING_ALGO_DIR = _REPO_ROOT / "mapping-algo"
 _ONLINE_LEARNING_DIR = _REPO_ROOT / "Online_learning"
+DEFAULT_DREAMING_FIXTURE_PATH = _REPO_ROOT / "LLM_Dreaming" / "dreaming_fixture.json"
 if str(_MAPPING_ALGO_DIR) not in sys.path:
     sys.path.append(str(_MAPPING_ALGO_DIR))
 if str(_ONLINE_LEARNING_DIR) not in sys.path:
@@ -278,197 +279,84 @@ def _extract_layer3_match_results(layer3_output: Any) -> List[Any]:
 # Candidate pool: synthetic extended profiles for testing
 # ============================================================
 
-def create_test_candidates() -> Tuple[ExtendedProfile, Task, List[ExtendedProfile]]:
-    """
-    Create Alice (requester) + task + 5 candidates with diverse soft attributes.
-    Layer 2 would have ranked these; we simulate the top-5 entering Layer 3.
-    """
-
-    task = Task(
-        task_id="task_001",
-        goal="Build Bayesian churn model, target NeurIPS",
-        requirements=[
-            TaskRequirement(_enc("bayesian statistics"),    level=0.8, constraint_type="soft", description="bayesian"),
-            TaskRequirement(_enc("python programming"),     level=0.6, constraint_type="soft", description="python"),
-            TaskRequirement(_enc("academic paper writing"), level=0.7, constraint_type="soft", description="paper_writing"),
-        ],
-        offers=[
-            TaskOffer(_enc("research collaboration"), strength=0.8, source="explicit", description="research collaboration"),
-            TaskOffer(_enc("academic authorship"),    strength=0.7, source="explicit", description="co-authorship"),
-        ],
-    )
-
-    alice = ExtendedProfile(
-        profile=make_user_state(
-            user_id="alice",
-            capabilities=[
-                _cap("bayesian statistics",    0.3, 0.2),
-                _cap("python programming",     0.8, 0.1),
-                _cap("academic paper writing", 0.4, 0.3, source="implicit"),
-            ],
-            needs=[
-                _need("bayesian statistics mentorship", 0.8),
-                _need("python programming",             0.1),
-                _need("academic paper writing",         0.7),
-            ],
-        ),
-        soft=SoftProfile(
-            availability="30h/week",
-            timezone="UTC-5 (EST)",
-            deadline_pressure="tight — submission in 3 months",
-            collab_style="sync-heavy, likes daily standups",
-            communication="concise, action-oriented",
-            personality_notes="Startup CTO, fast-paced, direct communicator, "
-                             "values efficiency over perfection",
-            priorities=["hit NeurIPS deadline", "solid Bayesian modeling",
-                        "clean reproducible code"],
-        ),
-    )
-
-    candidates = [
-        # Bob: strong match analytically, good soft fit
-        ExtendedProfile(
-            profile=make_user_state(
-                user_id="bob",
-                capabilities=[
-                    _cap("bayesian statistics",    0.9, 0.1),
-                    _cap("python programming",     0.5, 0.2),
-                    _cap("academic paper writing", 0.8, 0.1),
-                ],
-                needs=[
-                    _need("bayesian statistics",    0.2),
-                    _need("python programming",     0.7),
-                    _need("academic paper writing", 0.9),
-                ],
-            ),
-            soft=SoftProfile(
-                availability="20h/week",
-                timezone="UTC-5 (EST)",
-                deadline_pressure="moderate — also has coursework",
-                collab_style="mixed, prefers structured weekly meetings",
-                communication="detailed, likes to explain reasoning",
-                personality_notes="Stats PhD student, methodical, thorough, "
-                                 "sometimes slow but high quality output",
-                priorities=["first-author NeurIPS paper", "learn industry data pipelines",
-                            "build portfolio for job search"],
-            ),
-        ),
-
-        # Carol: high uncertainty, creative but chaotic
-        ExtendedProfile(
-            profile=make_user_state(
-                user_id="carol",
-                capabilities=[
-                    _cap("bayesian statistics",    0.6, 0.4, source="meta"),
-                    _cap("python programming",     0.7, 0.35, source="meta"),
-                    _cap("academic paper writing", 0.5, 0.4, source="meta"),
-                ],
-                needs=[
-                    _need("bayesian statistics",    0.5),
-                    _need("python programming",     0.3),
-                    _need("academic paper writing", 0.8),
-                ],
-            ),
-            soft=SoftProfile(
-                availability="15h/week — also freelancing",
-                timezone="UTC+1 (CET)",
-                deadline_pressure="relaxed — no hard deadlines personally",
-                collab_style="async-first, replies in batches",
-                communication="visual, loves diagrams and notebooks",
-                personality_notes="Creative ML researcher, lots of ideas, "
-                                 "jumps between projects, inconsistent follow-through",
-                priorities=["explore novel Bayesian methods", "add to publications list",
-                            "flexible schedule"],
-            ),
-        ),
-
-        # Dave: solid skills, timezone clash
-        ExtendedProfile(
-            profile=make_user_state(
-                user_id="dave",
-                capabilities=[
-                    _cap("bayesian statistics",    0.85, 0.15),
-                    _cap("python programming",     0.75, 0.1),
-                    _cap("academic paper writing", 0.6, 0.2),
-                ],
-                needs=[
-                    _need("bayesian statistics",    0.3),
-                    _need("python programming",     0.2),
-                    _need("academic paper writing", 0.7),
-                ],
-            ),
-            soft=SoftProfile(
-                availability="25h/week",
-                timezone="UTC+8 (SGT)",
-                deadline_pressure="moderate",
-                collab_style="async-first, very responsive on Slack",
-                communication="concise, code-speaks-louder",
-                personality_notes="Senior ML engineer at a Singapore startup, "
-                                 "pragmatic, ships fast, prefers working code over theory",
-                priorities=["get a top-venue publication", "transition to research role",
-                            "learn academic writing conventions"],
-            ),
-        ),
-
-        # Eve: perfect skills but overcommitted
-        ExtendedProfile(
-            profile=make_user_state(
-                user_id="eve",
-                capabilities=[
-                    _cap("bayesian statistics",    0.95, 0.05),
-                    _cap("python programming",     0.9, 0.05),
-                    _cap("academic paper writing", 0.85, 0.1),
-                ],
-                needs=[
-                    _need("bayesian statistics",    0.1),
-                    _need("python programming",     0.1),
-                    _need("academic paper writing", 0.3),
-                ],
-            ),
-            soft=SoftProfile(
-                availability="5h/week — leading 2 other projects",
-                timezone="UTC-5 (EST)",
-                deadline_pressure="very tight — own deadlines competing",
-                collab_style="async only, slow to respond",
-                communication="terse, bullet points",
-                personality_notes="Tenured professor, brilliant but stretched thin, "
-                                 "delegates heavily, hard to get time with",
-                priorities=["add another publication to lab output",
-                            "mentor junior researchers", "minimal time commitment"],
-            ),
-        ),
-
-        # Frank: junior but enthusiastic and available
-        ExtendedProfile(
-            profile=make_user_state(
-                user_id="frank",
-                capabilities=[
-                    _cap("bayesian statistics",    0.4, 0.3, source="implicit"),
-                    _cap("python programming",     0.6, 0.25),
-                    _cap("academic paper writing", 0.3, 0.35, source="implicit"),
-                ],
-                needs=[
-                    _need("bayesian statistics",    0.9),
-                    _need("python programming",     0.5),
-                    _need("academic paper writing", 0.9),
-                ],
-            ),
-            soft=SoftProfile(
-                availability="40h/week — dedicated to this",
-                timezone="UTC-5 (EST)",
-                deadline_pressure="none — gap year, fully flexible",
-                collab_style="sync-heavy, loves pair programming",
-                communication="detailed, asks lots of questions",
-                personality_notes="Recent CS masters grad, eager to learn, "
-                                 "high energy, very responsive, needs mentoring",
-                priorities=["learn Bayesian methods hands-on",
-                            "get first research publication",
-                            "build relationship with experienced researchers"],
-            ),
-        ),
+def _task_from_fixture(data: dict) -> Task:
+    requirements = [
+        TaskRequirement(
+            _enc(item["description"]),
+            level=item["level"],
+            constraint_type=item.get("constraint_type", "soft"),
+            description=item["description"],
+        )
+        for item in data.get("requirements", [])
     ]
+    offers = [
+        TaskOffer(
+            _enc(item["description"]),
+            strength=item["strength"],
+            source=item.get("source", "explicit"),
+            description=item["description"],
+        )
+        for item in data.get("offers", [])
+    ]
+    return Task(
+        task_id=data["task_id"],
+        goal=data.get("goal", data.get("title", "")),
+        requirements=requirements,
+        offers=offers,
+        data_clearance=data.get("data_clearance", 0),
+    )
 
-    return alice, task, candidates
+
+def _extended_profile_from_fixture(data: dict) -> ExtendedProfile:
+    capabilities = [
+        _cap(
+            item["description"],
+            item["mu"],
+            item.get("sigma", 0.0),
+            source=item.get("source", "explicit"),
+        )
+        for item in data.get("capabilities", [])
+    ]
+    needs = [
+        _need(item["description"], item["intensity"])
+        for item in data.get("needs", [])
+    ]
+    profile = make_user_state(
+        user_id=data["user_id"],
+        capabilities=capabilities,
+        needs=needs,
+        clearance_level=data.get("clearance_level", 0),
+    )
+    return ExtendedProfile(
+        profile=profile,
+        soft=soft_profile_from_dict(data.get("soft_profile"), data["user_id"]),
+    )
+
+
+def load_test_candidates_from_json(
+    fixture_path: Union[str, Path] = DEFAULT_DREAMING_FIXTURE_PATH,
+) -> Tuple[ExtendedProfile, Task, List[ExtendedProfile]]:
+    """
+    Load the Layer 3 dreaming demo fixture from JSON.
+    """
+    path = Path(fixture_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    requester = _extended_profile_from_fixture(data["requester"])
+    task = _task_from_fixture(data["task"])
+    candidates = [
+        _extended_profile_from_fixture(candidate)
+        for candidate in data.get("candidates", [])
+    ]
+    return requester, task, candidates
+
+
+def create_test_candidates(
+    fixture_path: Union[str, Path] = DEFAULT_DREAMING_FIXTURE_PATH,
+) -> Tuple[ExtendedProfile, Task, List[ExtendedProfile]]:
+    """
+    Load Alice + task + 5 candidates from the JSON dreaming fixture.
+    """
+    return load_test_candidates_from_json(fixture_path)
 
 
 # ============================================================

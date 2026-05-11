@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import types
 import unittest
@@ -12,6 +13,7 @@ if str(_MAPPING_ALGO_DIR) not in sys.path:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ONLINE_LEARNING_DIR = REPO_ROOT / "Online_learning"
+FIXTURE_PATH = REPO_ROOT / "LLM_Dreaming" / "dreaming_fixture.json"
 
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(ONLINE_LEARNING_DIR))
@@ -56,6 +58,14 @@ class TestDreamSimulatorLoading(unittest.TestCase):
 
 
 class TestProfileBuilding(unittest.TestCase):
+    def test_generated_fixture_contains_requested_persona_counts(self):
+        fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(fixture["metadata"]["num_requester_personas"], 1)
+        self.assertEqual(fixture["metadata"]["num_candidate_personas"], 5)
+        self.assertEqual(len(fixture["requester_personas"]), 1)
+        self.assertEqual(len(fixture["candidate_personas"]), 5)
+
     def test_create_test_candidates_builds_extended_and_soft_profiles(self):
         requester, task, candidates = dreaming.create_test_candidates()
         candidate = candidates[0]
