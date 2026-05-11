@@ -1,0 +1,167 @@
+OnlineLearning one-round run
+timestamp: 2026-05-11T13:54:32.309883
+requester: alice
+candidate_pool: bob, carol, dave
+selected_candidate_id: bob
+
+Layer 3.1 ranking:
+  ranked candidates: ['bob', 'dave', 'carol']
+  num ranked: 3
+
+Layer 3.2 dreaming:
+  refined candidates: ['bob', 'dave', 'carol']
+  recommendations: ['good_match', 'good_match', 'good_match']
+
+Match score:
+  {
+  "M (no UCB)": 1.0,
+  "M (with UCB)": 1.0,
+  "S_cap": 1.0,
+  "S_need": 1.0
+}
+
+Feedback:
+  {
+  "r_u": 1.0,
+  "r_v": 1.0,
+  "n_rounds": 4,
+  "completion": 1.0,
+  "stars": "u=5, v=5"
+}
+
+Reward:
+  {
+  "r_feedback": 1.0,
+  "r_efficiency": 0.9412,
+  "r_quality": 1.0,
+  "R": 0.9882
+}
+
+Path 1 Bayesian update:
+  {
+  "bayesian statistics": {
+    "x_k": 0.7906,
+    "sigma_obs": 0.2,
+    "sim": 1.0,
+    "cap_source": "explicit",
+    "mu": "0.9000 \u2192 0.8781",
+    "sigma": "0.1000 \u2192 0.0894"
+  },
+  "python programming": {
+    "x_k": 0.5929,
+    "sigma_obs": 0.2,
+    "sim": 1.0,
+    "cap_source": "explicit",
+    "mu": "0.5000 \u2192 0.5465",
+    "sigma": "0.2000 \u2192 0.1414"
+  }
+}
+
+Path 2 weights:
+  {
+  "loss": 0.000139,
+  "dL_dM": 0.0236,
+  "theta": "[0.4000, -0.1000] \u2192 [0.4000, -0.1000]",
+  "weights": "w_c=0.6225, w_n=0.3775"
+}
+
+Path 3 UCB:
+  {
+  "bayesian statistics": {
+    "mu": 0.8781,
+    "sigma": 0.0894,
+    "beta_sigma": 0.0894,
+    "ucb": 0.9675
+  },
+  "python programming": {
+    "mu": 0.5465,
+    "sigma": 0.1414,
+    "beta_sigma": 0.1414,
+    "ucb": 0.6879
+  }
+}
+
+Full report JSON:
+{
+  "round": 1,
+  "beta_t": 1.0,
+  "selected_candidate_id": "bob",
+  "layer3_1": {
+    "candidate_ids": [
+      "bob",
+      "dave",
+      "carol"
+    ],
+    "num_ranked_candidates": 3
+  },
+  "layer3_2": {
+    "candidate_ids": [
+      "bob",
+      "dave",
+      "carol"
+    ],
+    "num_refined_candidates": 3,
+    "recommendations": [
+      "good_match",
+      "good_match",
+      "good_match"
+    ]
+  },
+  "match_score": {
+    "M (no UCB)": 1.0,
+    "M (with UCB)": 1.0,
+    "S_cap": 1.0,
+    "S_need": 1.0
+  },
+  "feedback": {
+    "r_u": 1.0,
+    "r_v": 1.0,
+    "n_rounds": 4,
+    "completion": 1.0,
+    "stars": "u=5, v=5"
+  },
+  "reward": {
+    "r_feedback": 1.0,
+    "r_efficiency": 0.9412,
+    "r_quality": 1.0,
+    "R": 0.9882
+  },
+  "path1_bayesian": {
+    "bayesian statistics": {
+      "x_k": 0.7906,
+      "sigma_obs": 0.2,
+      "sim": 1.0,
+      "cap_source": "explicit",
+      "mu": "0.9000 \u2192 0.8781",
+      "sigma": "0.1000 \u2192 0.0894"
+    },
+    "python programming": {
+      "x_k": 0.5929,
+      "sigma_obs": 0.2,
+      "sim": 1.0,
+      "cap_source": "explicit",
+      "mu": "0.5000 \u2192 0.5465",
+      "sigma": "0.2000 \u2192 0.1414"
+    }
+  },
+  "path2_weights": {
+    "loss": 0.000139,
+    "dL_dM": 0.0236,
+    "theta": "[0.4000, -0.1000] \u2192 [0.4000, -0.1000]",
+    "weights": "w_c=0.6225, w_n=0.3775"
+  },
+  "path3_ucb": {
+    "bayesian statistics": {
+      "mu": 0.8781,
+      "sigma": 0.0894,
+      "beta_sigma": 0.0894,
+      "ucb": 0.9675
+    },
+    "python programming": {
+      "mu": 0.5465,
+      "sigma": 0.1414,
+      "beta_sigma": 0.1414,
+      "ucb": 0.6879
+    }
+  }
+}
