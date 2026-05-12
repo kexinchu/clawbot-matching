@@ -3,3 +3,5 @@ logs/
 __pycache__/
 mapping-algo/__pycache__/*
 .venv-docx/
+Results.pdf
+plots/

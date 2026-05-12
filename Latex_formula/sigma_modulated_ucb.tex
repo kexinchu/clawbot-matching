@@ -1,0 +1,225 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  stringstyle=\color{green!50!black},
+  commentstyle=\color{gray}\itshape,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{black!20},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+}
+
+\title{$\sigma$-Modulated UCB Exploration for Bilateral Matching}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{$\sigma$-Modulated UCB Exploration}
+\label{sec:sigma-ucb}
+
+\subsection{Limitation of Count-Based UCB1}
+
+The standard UCB1 selection rule for candidate-level exploration in the matching
+system is
+\begin{equation}
+\widetilde{M}_v \;=\; M_v \;+\; c \cdot \sqrt{\frac{\ln t}{n_v + 1}},
+\label{eq:ucb1}
+\end{equation}
+where $M_v$ is the analytical MapScore of candidate $v$, $n_v$ is the number of
+times $v$ has been selected up to round $t$, and $c > 0$ is the exploration
+constant. While Equation~\eqref{eq:ucb1} guarantees sublinear regret
+$\mathcal{R}(T) = \mathcal{O}(\sqrt{T \log T})$, it imposes a uniform warmup:
+every unseen candidate receives an unbounded bonus when $n_v = 0$, forcing the
+system to try \emph{every} candidate at least once before exploiting. With pool
+size $|\mathcal{V}| = 20$ and round budget $T = 60$, this warmup consumes $33\%$
+of the budget regardless of how informative the initial priors are.
+
+This penalty contradicts a design goal of our system: \emph{newcomers}
+(candidates with no platform history) deserve an upfront exploration bonus, but
+\emph{established candidates with a brief absence from the current task} do not.
+Count-based UCB1 cannot distinguish these two cases because $n_v$ measures
+only per-task selection history.
+
+\subsection{Proposed Rule}
+
+We replace Equation~\eqref{eq:ucb1} with a $\sigma$-modulated variant that uses
+the candidate's posterior uncertainty $\bar{\sigma}_v$ as an exploration
+intensity multiplier:
+\begin{equation}
+\widetilde{M}_v \;=\; M_v \;+\; c \cdot \bar{\sigma}_v \cdot
+\sqrt{\frac{\ln t}{n_v + 1}},
+\label{eq:sigma-ucb}
+\end{equation}
+where
+$\bar{\sigma}_v = \frac{1}{K}\sum_{k=1}^{K} \sigma_v^k$
+is the average posterior standard deviation across $v$'s $K$ capability
+dimensions. Because $\sigma_v^k$ shrinks monotonically as the platform
+accumulates feedback on $v$, $\bar{\sigma}_v$ encodes \emph{platform-wide}
+information about $v$, not session-specific selection history.
+
+Table~\ref{tab:bonus-intuition} illustrates the resulting exploration intensity
+for representative candidate profiles at $c = 1$ and $t = 5$.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccl}
+\toprule
+Candidate type & $\bar{\sigma}_v$ & Bonus & Behavior \\
+\midrule
+Brand-new (meta-knowledge source)   & 0.60 & 0.76 & strong upfront bonus \\
+New (implicit-knowledge source)     & 0.40 & 0.51 & meaningful exploration \\
+Established (explicit, few collabs) & 0.15 & 0.19 & mild bonus \\
+Veteran (many past collaborations)  & 0.05 & 0.06 & near pure greedy \\
+\bottomrule
+\end{tabular}
+\caption{Exploration bonus under $\sigma$-modulated UCB at $n_v = 0$, $c = 1$,
+$t = 5$. Newcomers receive an order of magnitude more bonus than veterans.}
+\label{tab:bonus-intuition}
+\end{table}
+
+Three properties follow directly:
+
+\begin{enumerate}
+\item \textbf{Upfront semantics.} New users enter the pool with high
+$\bar{\sigma}_v$ from the L1 representation layer; they receive exploration
+bonus immediately in round 1, without requiring repeated non-selection.
+
+\item \textbf{No forced warmup.} An established candidate with $n_v = 0$ in the
+current task does not receive an unbounded bonus, because $\bar{\sigma}_v$ is
+small. Veterans compete on $M$ alone.
+
+\item \textbf{Self-decaying exploration.} Once a newcomer is selected and
+feedback is observed, the Bayesian posterior update shrinks $\sigma_v^k$, which
+in turn reduces $\bar{\sigma}_v$ and the future exploration bonus. The system
+does not over-explore.
+\end{enumerate}
+
+\subsection{Optional Sublinear Variant}
+
+For settings where newcomer prominence should be amplified beyond linear
+proportion, we propose a square-root variant:
+\begin{equation}
+\widetilde{M}_v \;=\; M_v \;+\; c \cdot \sqrt{\bar{\sigma}_v} \cdot
+\sqrt{\frac{\ln t}{n_v + 1}}.
+\label{eq:sqrt-sigma-ucb}
+\end{equation}
+This widens the gap between newcomer and veteran bonuses (Table~\ref{tab:variants}).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+$\bar{\sigma}_v$ & Linear bonus (Eq.~\ref{eq:sigma-ucb}) & Square-root bonus (Eq.~\ref{eq:sqrt-sigma-ucb}) \\
+\midrule
+0.60 & 0.76 & 0.98 \\
+0.40 & 0.51 & 0.80 \\
+0.15 & 0.19 & 0.49 \\
+0.05 & 0.06 & 0.28 \\
+\bottomrule
+\end{tabular}
+\caption{Linear vs.\ square-root $\sigma$-modulation, $c = 1$, $t = 5$, $n_v = 0$.}
+\label{tab:variants}
+\end{table}
+
+\subsection{Implementation}
+
+The change requires modifying a single line of the existing candidate selector:
+
+\begin{lstlisting}[style=python]
+# UCB1 (original)
+bonus = self.candidate_ucb_c * math.sqrt(math.log(t) / (n_v + 1))
+
+# sigma-modulated UCB
+avg_sigma_v = mean(cap.sigma for cap in candidate.capabilities)
+bonus = self.candidate_ucb_c * avg_sigma_v \
+        * math.sqrt(math.log(t) / (n_v + 1))
+\end{lstlisting}
+
+\section{Tiered Candidate Pool Design}
+\label{sec:tiered-pool}
+
+\subsection{Motivation: Coupling $\sigma$ and $\mu$ Noise}
+
+A test pool with uniform $\sigma_v = 0.2$ and independently sampled $\mu$ noise
+fails to exercise the $\sigma$-modulated UCB mechanism. To distinguish
+$\sigma$-modulated UCB from count-based UCB1, the dataset must contain
+candidates whose \emph{both} $\mu$-uncertainty and $\sigma$-uncertainty vary
+together---reflecting the real-world fact that a platform with little history
+on a user has both a noisy point estimate $\mu$ and low confidence $\sigma$.
+
+We derive $\sigma$ from a combination of the L1 knowledge source and prior
+collaboration history. Recall Proposition~C of the proposal, which states that
+the posterior precision after $n$ updates satisfies
+\begin{equation}
+\sigma_v(n) \;\leq\; \frac{\sigma_{\text{obs}}^{\text{source}}}{\sqrt{n + 1}},
+\end{equation}
+where $\sigma_{\text{obs}}^{\text{source}} \in \{0.2, 0.4, 0.6\}$ for the
+explicit, implicit, and meta-knowledge sources respectively.
+
+\subsection{Tier Specification}
+
+We define four candidate tiers, each parameterized by an initial $\sigma$ and a
+$\mu$-noise standard deviation (Table~\ref{tab:tiers}).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llccc}
+\toprule
+Tier & Interpretation & $\sigma_v$ & $\mu$-noise & Pool fraction \\
+\midrule
+\texttt{veteran}      & Many past collaborations, well-known   & $\sim 0.05$ & $\mathcal{N}(0, 0.02)$ & 25\% \\
+\texttt{mid}          & 2--3 past collaborations               & $\sim 0.15$ & $\mathcal{N}(0, 0.10)$ & 25\% \\
+\texttt{new\_explicit} & Recently joined, detailed self-report & $\sim 0.30$ & $\mathcal{N}(0, 0.20)$ & 25\% \\
+\texttt{new\_implicit} & Recently joined, inferred from chat   & $\sim 0.50$ & $\mathcal{N}(0, 0.30)$ & 25\% \\
+\bottomrule
+\end{tabular}
+\caption{Four-tier candidate pool design with coupled $\sigma$ and $\mu$ noise.}
+\label{tab:tiers}
+\end{table}
+
+For each candidate $v$ assigned to tier $\tau$, we draw
+\begin{align}
+\sigma_v &\sim \mathcal{U}(\sigma_\tau - \delta_\tau, \;\sigma_\tau + \delta_\tau), \\
+\mu_v^{\text{init},k} &= \mathrm{clip}\bigl(\mu_v^{\text{true},k} + \varepsilon_k,\;0,\;1\bigr),
+\quad \varepsilon_k \sim \mathcal{N}\bigl(0, \,\eta_\tau^2\bigr),
+\end{align}
+where $\sigma_\tau, \eta_\tau, \delta_\tau$ are the tier parameters from
+Table~\ref{tab:tiers} and a small jitter $\delta_\tau$ (e.g., $0.02$--$0.08$)
+prevents identical $\sigma$ values within a tier.
+
+\subsection{Expected Algorithmic Behavior per Tier}
+
+Under $\sigma$-modulated UCB with $c = 1$, $t = 5$:
+
+\begin{itemize}
+\item \textbf{Veterans} ($\sigma = 0.05$): exploration bonus $\approx 0.06$;
+the system ranks them on near-true $\mu$ since their $\mu$-noise is also small.
+\item \textbf{Mid-experience} ($\sigma = 0.15$): bonus $\approx 0.19$; mild
+exploration if base $M$ is competitive.
+\item \textbf{New explicit} ($\sigma = 0.30$): bonus $\approx 0.38$; $6\times$
+a veteran's bonus, ensuring meaningful exploration despite noisy $\mu$.
+\item \textbf{New implicit} ($\sigma = 0.50$): bonus $\approx 0.63$; $10\times$
+a veteran's bonus. This is the tier most likely to harbor underestimated
+high-ability candidates ("hidden gems") and the strongest test of the
+anti-Matthew-effect property.
+\end{itemize}
+
+
+\end{document}
