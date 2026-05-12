@@ -5,3 +5,4 @@ mapping-algo/__pycache__/*
 .venv-docx/
 Results.pdf
 plots/
+Latex_formula/
