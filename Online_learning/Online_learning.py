@@ -4,12 +4,15 @@ _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "mapping-alg
 _repo = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(_repo) if _repo not in sys.path else None
 
+import math
+from collections import defaultdict
+
 from datatypes import UserState, Task
 from WorldModel import WorldModel
 from Reward_function import RewardFunction
 from Parameter_update import BayesianUpdater, WeightUpdater, UCBExplorer
 from pipeline import match_one_to_one
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from feedback_provider import FeedbackProvider, DummyFeedback
 from LLM_Dreaming.LLM_dreaming import DreamSimulator, PlanningLayer
 
@@ -36,6 +39,10 @@ class OnlineLearning:
         top_k: int = 6,
         top_n: int = 3,
         enable_dreaming: bool = True,
+        candidate_ucb_c: float = math.sqrt(2.0),
+        enable_candidate_ucb: bool = True,
+        enable_weight_update: bool = True,
+        use_capability_ucb: bool = True,
     ):
         self.world_model = world_model
         self.feedback_provider = feedback_provider or DummyFeedback()
@@ -46,6 +53,12 @@ class OnlineLearning:
         self.layer3_top_k = top_k
         self.layer3_top_n = top_n
         self.enable_dreaming = enable_dreaming
+        self.enable_candidate_ucb = enable_candidate_ucb
+        self.enable_weight_update = enable_weight_update
+        self.use_capability_ucb = use_capability_ucb
+        self.candidate_ucb_c = candidate_ucb_c
+        # Per-candidate selection counter (n_v in UCB1).
+        self.selection_counts: Dict[str, int] = defaultdict(int)
         self.dream_simulator = dream_simulator or DreamSimulator()
         self.planning_layer = PlanningLayer(
             world_model=self.world_model,
@@ -75,7 +88,7 @@ class OnlineLearning:
             self.world_model.theta,
             self.world_model.config,
             top_k=self.layer3_top_k,
-            use_ucb=True,
+            use_ucb=self.use_capability_ucb,
             round_t=round_num,
         )
 
@@ -100,10 +113,62 @@ class OnlineLearning:
             verbose=False,
         )
 
+    def select_with_candidate_ucb(
+        self,
+        entries: List[Tuple[str, float]],
+        round_num: int,
+    ) -> Tuple[Optional[str], List[dict]]:
+        """Pick a candidate from a ranked pool using UCB1 over candidates.
+
+            M̃_v = M_v + c · sqrt(log(t) / n_v)
+
+        where ``t`` is the global round counter (``round_num``) and ``n_v`` is
+        the number of times candidate ``v`` has been selected so far.
+        Candidates with ``n_v == 0`` receive an infinite bonus so every
+        candidate is tried at least once before any candidate is tried twice
+        (standard UCB1 warmup). Among never-selected candidates, ties are
+        broken by the higher base score.
+        """
+        if not entries:
+            return None, []
+
+        log_t = math.log(max(round_num, 2))
+        breakdown: List[dict] = []
+        best_id: Optional[str] = None
+        best_key: Tuple[float, float] = (-math.inf, -math.inf)
+
+        for cand_id, base in entries:
+            n_v = self.selection_counts.get(cand_id, 0)
+            if not self.enable_candidate_ucb:
+                bonus = 0.0
+                adjusted = float(base)
+            elif n_v == 0:
+                bonus = math.inf
+                adjusted = math.inf
+            else:
+                bonus = self.candidate_ucb_c * math.sqrt(log_t / n_v)
+                adjusted = base + bonus
+
+            breakdown.append({
+                "candidate_id": cand_id,
+                "base_score": round(float(base), 4),
+                "n_v": n_v,
+                "bonus": "inf" if math.isinf(bonus) else round(bonus, 4),
+                "adjusted_score": "inf" if math.isinf(adjusted) else round(adjusted, 4),
+            })
+
+            # Tuple comparison breaks ties (including inf vs inf) by base score.
+            key = (adjusted, float(base))
+            if key > best_key:
+                best_key = key
+                best_id = cand_id
+
+        return best_id, breakdown
+
     def run_one_round(
         self,
         requester: UserState,
-        candidate: UserState,
+        candidate: Optional[UserState],
         task: Task,
         feedback_override: Optional[dict] = None,
         candidate_pool: Optional[List[UserState]] = None,
@@ -124,7 +189,12 @@ class OnlineLearning:
         """
         self.ucb_explorer.step()
         round_num = self.ucb_explorer.round
+        if candidate_pool is None and candidate is None:
+            raise ValueError("run_one_round requires either a candidate or a candidate_pool")
+
         candidate_pool = list(candidate_pool) if candidate_pool is not None else [candidate]
+        if candidate is None:
+            candidate = candidate_pool[0]
         if not any(c.user_id == candidate.user_id for c in candidate_pool):
             candidate_pool.append(candidate)
         candidates_by_id = self._build_candidate_lookup(candidate_pool)
@@ -139,18 +209,36 @@ class OnlineLearning:
             requester, candidate_pool, task, ucb_ranking_results
         )
 
-        selected_candidate_id = candidate.user_id
+        # --- Candidate-level UCB selection (UCB1 over candidates) ---
+        # Build (candidate_id, base_score) entries: prefer dreaming combined
+        # score, fall back to layer 3.1 match score.
         if dreaming_filtered_results:
-            selected_candidate_id = dreaming_filtered_results[0].candidate_id
+            entries: List[Tuple[str, float]] = [
+                (r.candidate_id, float(r.combined_score))
+                for r in dreaming_filtered_results
+            ]
+            selection_source = "layer3_2"
         elif ucb_ranking_results:
-            selected_candidate_id = ucb_ranking_results[0].candidate_id
+            entries = [
+                (r.candidate_id, float(r.match_score))
+                for r in ucb_ranking_results
+            ]
+            selection_source = "layer3_1"
+        else:
+            entries = []
+            selection_source = "fallback"
 
+        ucb_selected_id, candidate_ucb_breakdown = self.select_with_candidate_ucb(
+            entries, round_num
+        )
+        selected_candidate_id = ucb_selected_id or candidate.user_id
         selected_candidate = candidates_by_id.get(selected_candidate_id, candidate)
+        self.selection_counts[selected_candidate.user_id] += 1
 
         # --- Layer 2: Compute match score for the selected candidate ---
         match_result = self.world_model.compute_match(
             requester, selected_candidate, task,
-            use_ucb=True,
+            use_ucb=self.use_capability_ucb,
             round_t=round_num,
         )
 
@@ -176,9 +264,12 @@ class OnlineLearning:
         bayes_updates = self.bayesian_updater.update(selected_candidate, task, reward.R)
 
         # --- Layer 5.3: Path 2 — Weight SGD ---
-        weight_updates = self.weight_updater.update(
-            self.world_model, match_no_ucb, reward.R
-        )
+        if self.enable_weight_update:
+            weight_updates = self.weight_updater.update(
+                self.world_model, match_no_ucb, reward.R
+            )
+        else:
+            weight_updates = {"skipped": True}
 
         # --- Layer 5.4: Path 3 — UCB state ---
         ucb_scores = self.ucb_explorer.compute_ucb_scores(selected_candidate)
@@ -187,6 +278,12 @@ class OnlineLearning:
             "round": round_num,
             "beta_t": round(self.ucb_explorer.beta, 4),
             "selected_candidate_id": selected_candidate.user_id,
+            "selection_counts": dict(self.selection_counts),
+            "candidate_ucb": {
+                "source": selection_source,
+                "c": round(self.candidate_ucb_c, 4),
+                "breakdown": candidate_ucb_breakdown,
+            },
             "layer3_1": {
                 "candidate_ids": [result.candidate_id for result in ucb_ranking_results],
                 "num_ranked_candidates": len(ucb_ranking_results),

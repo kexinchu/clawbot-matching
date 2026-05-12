@@ -102,58 +102,14 @@ button{font-family:var(--font);cursor:pointer}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
 <script type="text/babel">
-const {useState} = React;
+const {useState, useEffect, useCallback} = React;
 
-const SCENARIOS = [
-  {
-    id:"research",label:"Research collab",
-    requester:{name:"Alice Chen",initials:"AC",role:"AI Startup CTO",task:"Bayesian churn prediction model → NeurIPS",accent:"#6C5CE7"},
-    candidates:[
-      {name:"Bob Zhang",initials:"BZ",role:"Stats PhD · Stanford",combined:.87,recommendation:"strong_match",capCoverage:100,needSatisfaction:76,avatar:"#6C5CE7",
-       stats:{collabs:12,successRate:"92%",avgRating:4.7},
-       strengths:["Bayesian expert (μ=0.9)","8 publications","Same timezone (EST)"],
-       risks:["20h/week limit","PhD coursework competing"],
-       softScores:{time:.70,priority:.85,style:.78,personality:.82}},
-      {name:"Carol Liu",initials:"CL",role:"ML Researcher · Freelance",combined:.73,recommendation:"risky_match",capCoverage:85,needSatisfaction:66,avatar:"#E17055",
-       stats:{collabs:3,successRate:"67%",avgRating:3.8},
-       strengths:["Creative novel approaches","Strong Python (μ=0.7)","Wants to publish"],
-       risks:["15h/week + freelancing","6h timezone gap (CET)","Inconsistent follow-through"],
-       softScores:{time:.45,priority:.65,style:.42,personality:.55}},
-    ]
-  },
-  {
-    id:"hiring",label:"Talent search",
-    requester:{name:"Ben Park",initials:"BP",role:"VP Data · FinTech Series B",task:"Hire Data Scientist — data mining & feature engineering",accent:"#00B894"},
-    candidates:[
-      {name:"Jenny Wang",initials:"JW",role:"New grad · 3 internships",combined:.83,recommendation:"strong_match",capCoverage:72,needSatisfaction:85,avatar:"#00B894",
-       stats:{collabs:3,successRate:"100%",avgRating:4.9},
-       strengths:["3 internships (Google, Stripe, startup)","Eager & available full-time","Salary within budget"],
-       risks:["No production ML experience","May need mentoring first 3 months"],
-       softScores:{time:.95,priority:.90,style:.85,personality:.88}},
-      {name:"John Miller",initials:"JM",role:"Senior DS · 8 years exp",combined:.79,recommendation:"good_match",capCoverage:98,needSatisfaction:45,avatar:"#2D3436",
-       stats:{collabs:34,successRate:"88%",avgRating:4.3},
-       strengths:["Expert data mining (μ=0.95)","Production system experience","Can lead projects day 1"],
-       risks:["Salary 40% above budget","Wants management track","May leave in ~1 year"],
-       softScores:{time:.80,priority:.50,style:.70,personality:.55}},
-    ]
-  },
-  {
-    id:"marketplace",label:"Marketplace",
-    requester:{name:"Simon Davis",initials:"SD",role:"Individual seller",task:"Sell 2021 Tesla Model 3 — 45k miles, good condition",accent:"#D63031"},
-    candidates:[
-      {name:"Kevin Zhao",initials:"KZ",role:"Buyer · Pre-approved financing",combined:.89,recommendation:"strong_match",capCoverage:95,needSatisfaction:82,avatar:"#D63031",
-       stats:{collabs:7,successRate:"86%",avgRating:4.6},
-       strengths:["Offer: $28,500 (above market avg)","Pre-approved loan, ready to close","Flexible on pickup timing"],
-       risks:["Wants pre-purchase inspection (+3-5 days)"],
-       softScores:{time:.90,priority:.92,style:.85,personality:.88}},
-      {name:"Benjamin Foster",initials:"BF",role:"Buyer · Cash offer",combined:.77,recommendation:"good_match",capCoverage:80,needSatisfaction:70,avatar:"#636E72",
-       stats:{collabs:2,successRate:"50%",avgRating:3.5},
-       strengths:["Cash buyer, no financing delay","Can pick up today"],
-       risks:["Offer: $25,200 (below market)","History of last-minute renegotiation","Low platform reputation"],
-       softScores:{time:.95,priority:.60,style:.65,personality:.50}},
-    ]
-  }
-];
+// Default to same-origin when served from the showcase server. Override via
+// ?api=http://host:port for cross-origin local testing.
+const API_BASE = (() => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("api") || "";
+})();
 
 const recMap = {
   strong_match:{bg:"var(--green-bg)",text:"var(--green)",label:"Strong match"},
@@ -184,11 +140,23 @@ function Card({c,accent,idx,onAction}){
   const[action,setAction]=useState(null);
   const[rating,setRating]=useState(0);
   const[rated,setRated]=useState(false);
+  const[lastReward,setLastReward]=useState(null);
   const rec=recMap[c.recommendation]||recMap.good_match;
 
-  const doAction=t=>{setAction(t);onAction&&onAction(c.name,t,rating)};
+  const doAction=async t=>{
+    setAction(t);
+    const res=await onAction&&onAction(c,t,rating);
+    if(res&&res.reward)setLastReward(res.reward);
+  };
   const doRate=s=>{setRating(s);setRated(false)};
-  const submitRate=e=>{e.stopPropagation();setRated(true);onAction&&onAction(c.name,"rated",rating)};
+  const submitRate=async e=>{
+    e.stopPropagation();
+    setRated(true);
+    // Send a rating-only update so the backend can record stars without
+    // changing the accept/skip/reject decision yet.
+    const res=await onAction&&onAction(c,"rated",rating);
+    if(res&&res.reward)setLastReward(res.reward);
+  };
 
   if(action==="rejected"||action==="skipped"){
     return <div className="dismissed">
@@ -274,6 +242,10 @@ function Card({c,accent,idx,onAction}){
           <button className="btn btn-reject" onClick={e=>{e.stopPropagation();doAction("rejected")}}>Reject</button>
         </>:<div className="accepted-msg">Match accepted — notification sent</div>}
       </div>
+      {lastReward&&<div style={{marginTop:10,padding:"8px 12px",borderRadius:8,background:"var(--bg2)",fontSize:11,color:"var(--text2)",lineHeight:1.6}}>
+        <div style={{fontWeight:500,color:"var(--text)",marginBottom:2}}>Reward signal (R = {lastReward.R.toFixed(3)})</div>
+        r_feedback={lastReward.r_feedback.toFixed(2)} · r_efficiency={lastReward.r_efficiency.toFixed(2)} · r_quality={lastReward.r_quality.toFixed(2)}
+      </div>}
       <button className="btn-view" onClick={e=>e.stopPropagation()}>View simulated conversation</button>
     </div>}
 
@@ -296,10 +268,14 @@ function FeedbackLog({actions}){
   </div>;
 }
 
-function Scene({scenario}){
+function Scene({scenario,onFeedback}){
   const[actions,setActions]=useState([]);
   const{requester:req,candidates}=scenario;
-  const onAction=(name,type,rating)=>setActions(p=>[...p.filter(a=>!(a.name===name&&a.type===type)),{name,type,rating}]);
+  const handle=async(cand,type,rating)=>{
+    setActions(p=>[...p.filter(a=>!(a.name===cand.name&&a.type===type)),
+      {name:cand.name,type,rating}]);
+    return await onFeedback(scenario.id,cand,type,rating);
+  };
   return <div>
     <div className="requester">
       <div className="avatar" style={{background:req.accent+"20",color:req.accent,width:40,height:40,fontSize:13}}>{req.initials}</div>
@@ -308,23 +284,70 @@ function Scene({scenario}){
         <div style={{fontSize:13,color:"var(--text2)",marginTop:2}}>{req.task}</div>
       </div>
     </div>
-    {candidates.map((c,i)=><Card key={c.name} c={c} accent={req.accent} idx={i} onAction={onAction}/>)}
+    {candidates.length===0
+      ?<div className="dismissed" style={{justifyContent:"center"}}>Loading top candidates from backend…</div>
+      :candidates.map((c,i)=><Card key={c.candidate_id||c.name} c={c} accent={req.accent} idx={i} onAction={handle}/>)}
     <FeedbackLog actions={actions}/>
   </div>;
 }
 
 function App(){
+  const[scenarios,setScenarios]=useState([]);
   const[active,setActive]=useState(0);
+  const[err,setErr]=useState(null);
+
+  const fetchScenarios=useCallback(async()=>{
+    try{
+      const r=await fetch(`${API_BASE}/api/scenarios`);
+      if(!r.ok)throw new Error(`/api/scenarios: HTTP ${r.status}`);
+      const data=await r.json();
+      setScenarios(data.scenarios||[]);
+      setErr(null);
+    }catch(e){setErr(e.message||String(e))}
+  },[]);
+
+  useEffect(()=>{fetchScenarios()},[fetchScenarios]);
+
+  const sendFeedback=useCallback(async(scenario_id,cand,type,rating)=>{
+    // The 'rated' action is a UI-only signal (stars submitted without
+    // accept/skip/reject yet); we still POST it so the backend can record
+    // stars. The backend only accepts accepted/skipped/rejected, so we map
+    // 'rated' to 'accepted' for the reward purposes (a positive intent).
+    const action=type==="rated"?"accepted":type;
+    try{
+      const r=await fetch(`${API_BASE}/api/feedback`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({scenario_id,candidate_id:cand.candidate_id,action,stars:rating||null})
+      });
+      if(!r.ok){
+        const t=await r.text();
+        throw new Error(`/api/feedback: HTTP ${r.status} ${t}`);
+      }
+      return await r.json();
+    }catch(e){setErr(e.message||String(e));return null}
+  },[]);
+
   return <div className="container">
     <div className="header">
       <h1>Candidate discovery</h1>
       <p>MBRL matching system · Layer 4 presentation</p>
     </div>
+    {err&&<div style={{padding:"10px 14px",borderRadius:10,background:"var(--red-bg)",color:"var(--red)",fontSize:12,marginBottom:14}}>
+      Backend error: {err}. Start the server with <code>python Online_learning/showcase_server.py</code>.
+    </div>}
     <div className="tabs">
-      {SCENARIOS.map((s,i)=><button key={s.id} className={`tab${i===active?" active":""}`}
+      {scenarios.map((s,i)=><button key={s.id} className={`tab${i===active?" active":""}`}
         style={{"--accent":s.requester.accent}} onClick={()=>setActive(i)}>{s.label}</button>)}
     </div>
-    <Scene key={SCENARIOS[active].id} scenario={SCENARIOS[active]}/>
+    {scenarios.length>0&&<Scene key={scenarios[active].id+":"+scenarios[active].history.length}
+      scenario={scenarios[active]} onFeedback={async(...args)=>{
+        const res=await sendFeedback(...args);
+        // After feedback, refresh the scenario list so the updated
+        // Bayesian state and history are reflected.
+        fetchScenarios();
+        return res;
+      }}/>}
   </div>;
 }
 
