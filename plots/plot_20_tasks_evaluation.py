@@ -37,12 +37,21 @@ LABELS = {
 }
 
 
-def _find_latest_eval(timestamp: Optional[str]) -> Path:
-    if timestamp:
-        candidate = LOGS_DIR / f"online_learning_20tasks_eval_{timestamp}.json"
-        if not candidate.exists():
-            raise FileNotFoundError(candidate)
-        return candidate
+def _find_latest_eval(arg: Optional[str]) -> Path:
+    """Locate the eval JSON. `arg` may be a path, a timestamp, or a full
+    suffix like 'gaussian0.2_20260512-063000'."""
+    if arg:
+        as_path = Path(arg)
+        if as_path.exists():
+            return as_path
+        candidate = LOGS_DIR / f"online_learning_20tasks_eval_{arg}.json"
+        if candidate.exists():
+            return candidate
+        # last-resort: glob match
+        matches = sorted(LOGS_DIR.glob(f"online_learning_20tasks_eval_*{arg}*.json"))
+        if matches:
+            return matches[-1]
+        raise FileNotFoundError(f"Could not find eval file for '{arg}'")
     matches = sorted(LOGS_DIR.glob("online_learning_20tasks_eval_*.json"))
     if not matches:
         raise FileNotFoundError("No 20-task evaluation files found in logs/")
@@ -130,8 +139,15 @@ def main() -> int:
     data = json.loads(eval_path.read_text())
     per_task = data["per_task"]
     summary = data["summary"]
+    meta = data["metadata"]
     timestamp = eval_path.stem.split("_")[-1]
-    n_max = data["metadata"]["n_max_rounds"]
+    n_max = meta["n_max_rounds"]
+    noise_mode = meta.get("noise_mode", "none")
+    noise_sigma = meta.get("noise_sigma", 0.0)
+    noise_str = (
+        f"noise={noise_mode}"
+        + (f"(σ={noise_sigma})" if noise_mode == "gaussian" else "")
+    )
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 10))
     _grouped_bars(
@@ -167,12 +183,12 @@ def main() -> int:
             f"rho_mode={s['rho_mode']['mean']:.3f}  rho_last={s['rho_last']['mean']:.3f}"
         )
     fig.suptitle(
-        f"20-Task Evaluation ({timestamp})\n" + "\n".join(summary_lines),
+        f"20-Task Evaluation ({timestamp})  |  {noise_str}\n" + "\n".join(summary_lines),
         fontsize=10, family="monospace",
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    fig.tight_layout(rect=(0, 0, 1, 0.90))
 
-    out_path = PLOTS_DIR / f"online_learning_20tasks_eval_{timestamp}.png"
+    out_path = PLOTS_DIR / f"online_learning_20tasks_eval_{eval_path.stem.replace('online_learning_20tasks_eval_', '')}.png"
     fig.savefig(out_path, dpi=150)
     print(f"Saved plot to {out_path}")
     return 0

@@ -113,21 +113,34 @@ class OnlineLearning:
             verbose=False,
         )
 
+    @staticmethod
+    def _avg_capability_sigma(candidate: Optional[UserState]) -> float:
+        """Mean σ over a candidate's capabilities (0.0 if no capabilities)."""
+        if candidate is None or not candidate.capabilities:
+            return 0.0
+        sigmas = [float(cap.sigma) for cap in candidate.capabilities]
+        return sum(sigmas) / len(sigmas)
+
     def select_with_candidate_ucb(
         self,
         entries: List[Tuple[str, float]],
         round_num: int,
+        candidates_by_id: Optional[Dict[str, UserState]] = None,
     ) -> Tuple[Optional[str], List[dict]]:
-        """Pick a candidate from a ranked pool using UCB1 over candidates.
+        """Pick a candidate from a ranked pool using a sigma-weighted UCB.
 
-            M̃_v = M_v + c · sqrt(log(t) / n_v)
+            M̃_v = M_v + c · σ̄_v · sqrt( log(t) / (n_v + 1) )
 
-        where ``t`` is the global round counter (``round_num``) and ``n_v`` is
-        the number of times candidate ``v`` has been selected so far.
-        Candidates with ``n_v == 0`` receive an infinite bonus so every
-        candidate is tried at least once before any candidate is tried twice
-        (standard UCB1 warmup). Among never-selected candidates, ties are
-        broken by the higher base score.
+        where ``t`` is the global round counter (``round_num``), ``n_v`` is
+        the number of times candidate ``v`` has been selected so far, and
+        ``σ̄_v`` is the mean Capability.sigma over candidate v's abilities.
+
+        Compared to vanilla UCB1, σ̄_v scales the exploration bonus by the
+        agent's own uncertainty about that candidate's capabilities, so
+        well-known candidates (low σ̄_v) do not get force-explored. The
+        ``+ 1`` in the denominator removes the special ``n_v == 0 → ∞``
+        warmup branch — unseen candidates simply receive the largest finite
+        bonus, still gated by σ̄_v. Ties are broken by the base score.
         """
         if not entries:
             return None, []
@@ -139,25 +152,28 @@ class OnlineLearning:
 
         for cand_id, base in entries:
             n_v = self.selection_counts.get(cand_id, 0)
+            candidate = candidates_by_id.get(cand_id) if candidates_by_id else None
+            avg_sigma_v = self._avg_capability_sigma(candidate)
             if not self.enable_candidate_ucb:
                 bonus = 0.0
                 adjusted = float(base)
-            elif n_v == 0:
-                bonus = math.inf
-                adjusted = math.inf
             else:
-                bonus = self.candidate_ucb_c * math.sqrt(log_t / n_v)
-                adjusted = base + bonus
+                bonus = (
+                    self.candidate_ucb_c
+                    * avg_sigma_v
+                    * math.sqrt(log_t / (n_v + 1))
+                )
+                adjusted = float(base) + bonus
 
             breakdown.append({
                 "candidate_id": cand_id,
                 "base_score": round(float(base), 4),
                 "n_v": n_v,
-                "bonus": "inf" if math.isinf(bonus) else round(bonus, 4),
-                "adjusted_score": "inf" if math.isinf(adjusted) else round(adjusted, 4),
+                "avg_sigma_v": round(avg_sigma_v, 4),
+                "bonus": round(bonus, 4),
+                "adjusted_score": round(adjusted, 4),
             })
 
-            # Tuple comparison breaks ties (including inf vs inf) by base score.
             key = (adjusted, float(base))
             if key > best_key:
                 best_key = key
@@ -229,7 +245,7 @@ class OnlineLearning:
             selection_source = "fallback"
 
         ucb_selected_id, candidate_ucb_breakdown = self.select_with_candidate_ucb(
-            entries, round_num
+            entries, round_num, candidates_by_id=candidates_by_id
         )
         selected_candidate_id = ucb_selected_id or candidate.user_id
         selected_candidate = candidates_by_id.get(selected_candidate_id, candidate)
@@ -282,6 +298,7 @@ class OnlineLearning:
             "candidate_ucb": {
                 "source": selection_source,
                 "c": round(self.candidate_ucb_c, 4),
+                "formula": "M_v + c * avg_sigma_v * sqrt(log(t)/(n_v+1))",
                 "breakdown": candidate_ucb_breakdown,
             },
             "layer3_1": {
