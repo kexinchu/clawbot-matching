@@ -142,7 +142,41 @@ class SimulatorFeedback(FeedbackProvider):
         }
 
 
-# ── Implementation 3: human (placeholder) ─────────────────────────────
+# ── Implementation 3: simulator + oracle skill-level observations ───────
+
+class SkillLevelFeedback(FeedbackProvider):
+    """Simulator feedback augmented with per-skill proficiency observations.
+
+    The bilateral simulator still drives r_u / r_v / completion (Layer 4),
+    but we also attach ``_skill_observations`` — a map from capability
+    description → observed μ in [0, 1] — derived from the candidate's
+    *true* profile.  This models "we asked peers to rate each skill after
+    collaboration" without changing Reward_function's six-field formula.
+
+    BayesianUpdater consumes ``_skill_observations`` when present, using
+    the direct skill score as x_k instead of R · q_j.
+    """
+
+    def __init__(
+        self,
+        true_states_by_id: dict,
+        config: Optional[sim.SimulatorConfig] = None,
+    ):
+        self.true_states = true_states_by_id
+        self.sim = SimulatorFeedback(config=config)
+
+    def collect(self, requester, candidate, task, match) -> dict:
+        base = self.sim.collect(requester, candidate, task, match)
+        true_v = self.true_states.get(candidate.user_id, candidate)
+        skill_obs: dict = {}
+        for cap in true_v.capabilities:
+            if cap.description:
+                skill_obs[cap.description] = float(cap.mu)
+        base["_skill_observations"] = skill_obs
+        return base
+
+
+# ── Implementation 4: human (placeholder) ─────────────────────────────
 
 class HumanFeedback(FeedbackProvider):
     """Wired in Phase 3+: collect feedback from real users via API/form."""

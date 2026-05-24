@@ -277,7 +277,11 @@ class OnlineLearning:
         reward = self.reward_fn.compute(feedback)
 
         # --- Layer 5.2: Path 1 — Bayesian update (μ, σ) ---
-        bayes_updates = self.bayesian_updater.update(selected_candidate, task, reward.R)
+        skill_obs = feedback.get("_skill_observations")
+        bayes_updates = self.bayesian_updater.update(
+            selected_candidate, task, reward.R,
+            skill_observations=skill_obs,
+        )
 
         # --- Layer 5.3: Path 2 — Weight SGD ---
         if self.enable_weight_update:

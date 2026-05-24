@@ -31,6 +31,7 @@ class BayesianUpdater:
         candidate: UserState,
         task: Task,
         R: float,
+        skill_observations: Optional[Dict[str, float]] = None,
     ) -> Dict[str, dict]:
         """
         Update candidate's capability parameters using reward R.
@@ -67,8 +68,13 @@ class BayesianUpdater:
             # Source-aware observation noise
             sigma_obs = source_sigma.get(cap.source, cfg.sigma_obs_implicit)
 
-            # Observation: x_k = R * req.level
-            x_k = R * req.level
+            # Observation: x_k = R * req.level, unless skill-level feedback
+            # supplies a direct proficiency signal for this capability.
+            cap_desc = cap.description or ""
+            if skill_observations and cap_desc in skill_observations:
+                x_k = float(skill_observations[cap_desc])
+            else:
+                x_k = R * req.level
 
             # Bayesian posterior update (precision form)
             sigma_obs_sq = sigma_obs ** 2
