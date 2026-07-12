@@ -1,0 +1,3791 @@
+{
+  "metadata": {
+    "generated_by": "Experiments/interpretability/generate_faithfulness_failure_case.py",
+    "source": "simulator/20_Tasks_Testset_tiered.json",
+    "goal": "diagnostic dataset: every candidate has a single off-topic need with high intensity, designed to trigger the attribution-share \u2260 perturbation-sensitivity failure",
+    "num_tasks": 10,
+    "candidate_templates": [
+      "strong_general",
+      "strong_specialist",
+      "medium",
+      "weak",
+      "distractor"
+    ],
+    "off_topic_needs": [
+      "mentorship",
+      "networking",
+      "funding",
+      "career_growth",
+      "executive_coaching",
+      "press_relations",
+      "patenting"
+    ],
+    "expected_failure_pattern": [
+      "mean_top_factor_drop <= mean_random_factor_drop",
+      "frac_top_beats_random significantly below 1.0",
+      "mean_true_top_drop_percentile far below 1.0",
+      "oracle_top differs from explanation_top",
+      "high explanation_rank_among_all_perturbations"
+    ]
+  },
+  "tasks": [
+    {
+      "task": {
+        "task_id": "task_01",
+        "title": "Design Recommendation API [failure-case]",
+        "description": "Design Recommendation API for a ml_platform initiative. Needs strong execution across ml_systems, python, evaluation, paper_writing, bayesian_modeling. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "ml_systems": 0.64,
+          "python": 0.9600000000000001,
+          "evaluation": 0.93,
+          "paper_writing": 1.0,
+          "bayesian_modeling": 0.55
+        },
+        "metadata": {
+          "urgency": "high",
+          "budget": "lean",
+          "visibility": "high",
+          "duration_weeks": 5,
+          "domain": "matching"
+        },
+        "offer_skills": {
+          "ml_systems": 0.64,
+          "python": 0.9600000000000001,
+          "evaluation": 0.93,
+          "paper_writing": 1.0,
+          "bayesian_modeling": 0.55
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_01_proposer",
+        "role": "requester",
+        "capabilities": {
+          "paper_writing": 0.1,
+          "python": 0.1,
+          "evaluation": 0.45,
+          "ml_systems": 0.45,
+          "bayesian_modeling": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "ml_systems": 0.5,
+          "python": 0.86,
+          "evaluation": 0.81,
+          "paper_writing": 0.65,
+          "bayesian_modeling": 0.57
+        },
+        "preferences": {
+          "communication_style": "async_first",
+          "timezone": "UTC",
+          "urgency_preference": "high"
+        },
+        "constraints": {
+          "meeting_load": 0.37
+        },
+        "history_summary": "Requester for task 01; previous project delivery record is mixed."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_01_candidate_01",
+            "role": "weak",
+            "capabilities": {
+              "paper_writing": 0.25,
+              "python": 0.2,
+              "evaluation": 0.4,
+              "ml_systems": 0.4,
+              "bayesian_modeling": 0.4
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_01. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_01_candidate_01",
+            "summary": "weak candidate for task_01.",
+            "highlighted_strengths": [
+              "evaluation",
+              "ml_systems",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "paper_writing": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_01_candidate_02",
+            "role": "strong_specialist",
+            "capabilities": {
+              "paper_writing": 0.95,
+              "python": 0.2,
+              "evaluation": 0.45,
+              "ml_systems": 0.45,
+              "bayesian_modeling": 0.45
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_01. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_01_candidate_02",
+            "summary": "strong_specialist candidate for task_01.",
+            "highlighted_strengths": [
+              "paper_writing",
+              "evaluation",
+              "ml_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "paper_writing": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_01_candidate_03",
+            "role": "medium",
+            "capabilities": {
+              "paper_writing": 0.55,
+              "python": 0.55,
+              "evaluation": 0.55,
+              "ml_systems": 0.55,
+              "bayesian_modeling": 0.55
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_01. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_01_candidate_03",
+            "summary": "medium candidate for task_01.",
+            "highlighted_strengths": [
+              "paper_writing",
+              "python",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "paper_writing": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_01_candidate_04",
+            "role": "distractor",
+            "capabilities": {
+              "paper_writing": 0.3,
+              "python": 0.1,
+              "evaluation": 0.1,
+              "ml_systems": 0.1,
+              "bayesian_modeling": 0.1
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_01. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_01_candidate_04",
+            "summary": "distractor candidate for task_01.",
+            "highlighted_strengths": [
+              "paper_writing",
+              "python",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "paper_writing": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_01_candidate_05",
+            "role": "strong_general",
+            "capabilities": {
+              "paper_writing": 0.85,
+              "python": 0.75,
+              "evaluation": 0.6,
+              "ml_systems": 0.6,
+              "bayesian_modeling": 0.6
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_01. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_01_candidate_05",
+            "summary": "strong_general candidate for task_01.",
+            "highlighted_strengths": [
+              "paper_writing",
+              "python",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "paper_writing": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_01_candidate_01": "weak",
+          "task_01_candidate_02": "strong_specialist",
+          "task_01_candidate_03": "medium",
+          "task_01_candidate_04": "distractor",
+          "task_01_candidate_05": "strong_general"
+        },
+        "candidate_off_topic_needs": {
+          "task_01_candidate_01": "networking",
+          "task_01_candidate_02": "funding",
+          "task_01_candidate_03": "career_growth",
+          "task_01_candidate_04": "executive_coaching",
+          "task_01_candidate_05": "press_relations"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_02",
+        "title": "Launch RAG Evaluation Dashboard [failure-case]",
+        "description": "Launch RAG Evaluation Dashboard for a marketplace initiative. Needs strong execution across bayesian_modeling, recommender_systems, communication. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "bayesian_modeling": 0.87,
+          "recommender_systems": 0.51,
+          "communication": 0.98
+        },
+        "metadata": {
+          "urgency": "low",
+          "budget": "lean",
+          "visibility": "high",
+          "duration_weeks": 9,
+          "domain": "analytics"
+        },
+        "offer_skills": {
+          "bayesian_modeling": 0.87,
+          "recommender_systems": 0.51,
+          "communication": 0.98
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_02_proposer",
+        "role": "requester",
+        "capabilities": {
+          "communication": 0.1,
+          "bayesian_modeling": 0.1,
+          "recommender_systems": 0.45,
+          "project_management": 0.65
+        },
+        "needs": {
+          "bayesian_modeling": 0.72,
+          "recommender_systems": 0.54,
+          "communication": 0.66
+        },
+        "preferences": {
+          "communication_style": "structured_sync",
+          "timezone": "UTC",
+          "urgency_preference": "low"
+        },
+        "constraints": {
+          "meeting_load": 0.17
+        },
+        "history_summary": "Requester for task 02; previous project delivery record is strong."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_02_candidate_01",
+            "role": "weak",
+            "capabilities": {
+              "communication": 0.25,
+              "bayesian_modeling": 0.2,
+              "recommender_systems": 0.4
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_02. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_02_candidate_01",
+            "summary": "weak candidate for task_02.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "communication",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_02_candidate_02",
+            "role": "medium",
+            "capabilities": {
+              "communication": 0.55,
+              "bayesian_modeling": 0.55,
+              "recommender_systems": 0.55
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_02. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_02_candidate_02",
+            "summary": "medium candidate for task_02.",
+            "highlighted_strengths": [
+              "communication",
+              "bayesian_modeling",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_02_candidate_03",
+            "role": "strong_general",
+            "capabilities": {
+              "communication": 0.85,
+              "bayesian_modeling": 0.75,
+              "recommender_systems": 0.6
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_02. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_02_candidate_03",
+            "summary": "strong_general candidate for task_02.",
+            "highlighted_strengths": [
+              "communication",
+              "bayesian_modeling",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_02_candidate_04",
+            "role": "distractor",
+            "capabilities": {
+              "communication": 0.3,
+              "bayesian_modeling": 0.1,
+              "recommender_systems": 0.1
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_02. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_02_candidate_04",
+            "summary": "distractor candidate for task_02.",
+            "highlighted_strengths": [
+              "communication",
+              "bayesian_modeling",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_02_candidate_05",
+            "role": "strong_specialist",
+            "capabilities": {
+              "communication": 0.95,
+              "bayesian_modeling": 0.2,
+              "recommender_systems": 0.45
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_02. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_02_candidate_05",
+            "summary": "strong_specialist candidate for task_02.",
+            "highlighted_strengths": [
+              "communication",
+              "recommender_systems",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_02_candidate_01": "weak",
+          "task_02_candidate_02": "medium",
+          "task_02_candidate_03": "strong_general",
+          "task_02_candidate_04": "distractor",
+          "task_02_candidate_05": "strong_specialist"
+        },
+        "candidate_off_topic_needs": {
+          "task_02_candidate_01": "patenting",
+          "task_02_candidate_02": "mentorship",
+          "task_02_candidate_03": "networking",
+          "task_02_candidate_04": "funding",
+          "task_02_candidate_05": "career_growth"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_03",
+        "title": "Create ML Data Pipeline [failure-case]",
+        "description": "Create ML Data Pipeline for a marketplace initiative. Needs strong execution across frontend, bayesian_modeling, python. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "frontend": 0.7000000000000001,
+          "bayesian_modeling": 0.5599999999999999,
+          "python": 0.9500000000000001
+        },
+        "metadata": {
+          "urgency": "high",
+          "budget": "lean",
+          "visibility": "high",
+          "duration_weeks": 6,
+          "domain": "ml_platform"
+        },
+        "offer_skills": {
+          "frontend": 0.7000000000000001,
+          "bayesian_modeling": 0.5599999999999999,
+          "python": 0.9500000000000001
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_03_proposer",
+        "role": "requester",
+        "capabilities": {
+          "python": 0.1,
+          "frontend": 0.1,
+          "bayesian_modeling": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "frontend": 0.62,
+          "bayesian_modeling": 0.88,
+          "python": 0.75
+        },
+        "preferences": {
+          "communication_style": "mixed",
+          "timezone": "SGT",
+          "urgency_preference": "medium"
+        },
+        "constraints": {
+          "meeting_load": 0.18
+        },
+        "history_summary": "Requester for task 03; previous project delivery record is mixed."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_03_candidate_01",
+            "role": "weak",
+            "capabilities": {
+              "python": 0.25,
+              "frontend": 0.2,
+              "bayesian_modeling": 0.4
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_03. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_03_candidate_01",
+            "summary": "weak candidate for task_03.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "python",
+              "frontend"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "python": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_03_candidate_02",
+            "role": "strong_specialist",
+            "capabilities": {
+              "python": 0.95,
+              "frontend": 0.2,
+              "bayesian_modeling": 0.45
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_03. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_03_candidate_02",
+            "summary": "strong_specialist candidate for task_03.",
+            "highlighted_strengths": [
+              "python",
+              "bayesian_modeling",
+              "frontend"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "python": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_03_candidate_03",
+            "role": "medium",
+            "capabilities": {
+              "python": 0.55,
+              "frontend": 0.55,
+              "bayesian_modeling": 0.55
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_03. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_03_candidate_03",
+            "summary": "medium candidate for task_03.",
+            "highlighted_strengths": [
+              "python",
+              "frontend",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "python": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_03_candidate_04",
+            "role": "strong_general",
+            "capabilities": {
+              "python": 0.85,
+              "frontend": 0.75,
+              "bayesian_modeling": 0.6
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_03. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_03_candidate_04",
+            "summary": "strong_general candidate for task_03.",
+            "highlighted_strengths": [
+              "python",
+              "frontend",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "python": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_03_candidate_05",
+            "role": "distractor",
+            "capabilities": {
+              "python": 0.3,
+              "frontend": 0.1,
+              "bayesian_modeling": 0.1
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_03. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_03_candidate_05",
+            "summary": "distractor candidate for task_03.",
+            "highlighted_strengths": [
+              "python",
+              "frontend",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "python": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_03_candidate_01": "weak",
+          "task_03_candidate_02": "strong_specialist",
+          "task_03_candidate_03": "medium",
+          "task_03_candidate_04": "strong_general",
+          "task_03_candidate_05": "distractor"
+        },
+        "candidate_off_topic_needs": {
+          "task_03_candidate_01": "executive_coaching",
+          "task_03_candidate_02": "press_relations",
+          "task_03_candidate_03": "patenting",
+          "task_03_candidate_04": "mentorship",
+          "task_03_candidate_05": "networking"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_04",
+        "title": "Prototype Hiring Assistant [failure-case]",
+        "description": "Prototype Hiring Assistant for a analytics initiative. Needs strong execution across backend, recommender_systems, communication, statistics. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "backend": 0.52,
+          "recommender_systems": 0.55,
+          "communication": 1.0,
+          "statistics": 0.87
+        },
+        "metadata": {
+          "urgency": "high",
+          "budget": "competitive",
+          "visibility": "high",
+          "duration_weeks": 15,
+          "domain": "marketplace"
+        },
+        "offer_skills": {
+          "backend": 0.52,
+          "recommender_systems": 0.55,
+          "communication": 1.0,
+          "statistics": 0.87
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_04_proposer",
+        "role": "requester",
+        "capabilities": {
+          "communication": 0.1,
+          "statistics": 0.1,
+          "recommender_systems": 0.45,
+          "backend": 0.45,
+          "project_management": 0.65
+        },
+        "needs": {
+          "backend": 0.81,
+          "recommender_systems": 0.82,
+          "communication": 0.68,
+          "statistics": 0.61
+        },
+        "preferences": {
+          "communication_style": "structured_sync",
+          "timezone": "UTC",
+          "urgency_preference": "medium"
+        },
+        "constraints": {
+          "meeting_load": 0.43
+        },
+        "history_summary": "Requester for task 04; previous project delivery record is solid."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_04_candidate_01",
+            "role": "strong_specialist",
+            "capabilities": {
+              "communication": 0.95,
+              "statistics": 0.2,
+              "recommender_systems": 0.45,
+              "backend": 0.45
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_04. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_04_candidate_01",
+            "summary": "strong_specialist candidate for task_04.",
+            "highlighted_strengths": [
+              "communication",
+              "recommender_systems",
+              "backend"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_04_candidate_02",
+            "role": "medium",
+            "capabilities": {
+              "communication": 0.55,
+              "statistics": 0.55,
+              "recommender_systems": 0.55,
+              "backend": 0.55
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_04. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_04_candidate_02",
+            "summary": "medium candidate for task_04.",
+            "highlighted_strengths": [
+              "communication",
+              "statistics",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_04_candidate_03",
+            "role": "weak",
+            "capabilities": {
+              "communication": 0.25,
+              "statistics": 0.2,
+              "recommender_systems": 0.4,
+              "backend": 0.4
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_04. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_04_candidate_03",
+            "summary": "weak candidate for task_04.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "backend",
+              "communication"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_04_candidate_04",
+            "role": "distractor",
+            "capabilities": {
+              "communication": 0.3,
+              "statistics": 0.1,
+              "recommender_systems": 0.1,
+              "backend": 0.1
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_04. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_04_candidate_04",
+            "summary": "distractor candidate for task_04.",
+            "highlighted_strengths": [
+              "communication",
+              "statistics",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_04_candidate_05",
+            "role": "strong_general",
+            "capabilities": {
+              "communication": 0.85,
+              "statistics": 0.75,
+              "recommender_systems": 0.6,
+              "backend": 0.6
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_04. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_04_candidate_05",
+            "summary": "strong_general candidate for task_04.",
+            "highlighted_strengths": [
+              "communication",
+              "statistics",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_04_candidate_01": "strong_specialist",
+          "task_04_candidate_02": "medium",
+          "task_04_candidate_03": "weak",
+          "task_04_candidate_04": "distractor",
+          "task_04_candidate_05": "strong_general"
+        },
+        "candidate_off_topic_needs": {
+          "task_04_candidate_01": "funding",
+          "task_04_candidate_02": "career_growth",
+          "task_04_candidate_03": "executive_coaching",
+          "task_04_candidate_04": "press_relations",
+          "task_04_candidate_05": "patenting"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_05",
+        "title": "Improve Matching Quality Monitor [failure-case]",
+        "description": "Improve Matching Quality Monitor for a research initiative. Needs strong execution across bayesian_modeling, backend, evaluation, frontend. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "bayesian_modeling": 0.67,
+          "backend": 0.55,
+          "evaluation": 0.73,
+          "frontend": 0.8200000000000001
+        },
+        "metadata": {
+          "urgency": "high",
+          "budget": "lean",
+          "visibility": "high",
+          "duration_weeks": 8,
+          "domain": "research"
+        },
+        "offer_skills": {
+          "bayesian_modeling": 0.67,
+          "backend": 0.55,
+          "evaluation": 0.73,
+          "frontend": 0.8200000000000001
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_05_proposer",
+        "role": "requester",
+        "capabilities": {
+          "frontend": 0.1,
+          "evaluation": 0.1,
+          "bayesian_modeling": 0.45,
+          "backend": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "bayesian_modeling": 0.63,
+          "backend": 0.85,
+          "evaluation": 0.83,
+          "frontend": 0.61
+        },
+        "preferences": {
+          "communication_style": "mixed",
+          "timezone": "UTC",
+          "urgency_preference": "medium"
+        },
+        "constraints": {
+          "meeting_load": 0.8
+        },
+        "history_summary": "Requester for task 05; previous project delivery record is strong."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_05_candidate_01",
+            "role": "distractor",
+            "capabilities": {
+              "frontend": 0.3,
+              "evaluation": 0.1,
+              "bayesian_modeling": 0.1,
+              "backend": 0.1
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_05. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_05_candidate_01",
+            "summary": "distractor candidate for task_05.",
+            "highlighted_strengths": [
+              "frontend",
+              "evaluation",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "frontend": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_05_candidate_02",
+            "role": "weak",
+            "capabilities": {
+              "frontend": 0.25,
+              "evaluation": 0.2,
+              "bayesian_modeling": 0.4,
+              "backend": 0.4
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_05. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_05_candidate_02",
+            "summary": "weak candidate for task_05.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "backend",
+              "frontend"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "frontend": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_05_candidate_03",
+            "role": "medium",
+            "capabilities": {
+              "frontend": 0.55,
+              "evaluation": 0.55,
+              "bayesian_modeling": 0.55,
+              "backend": 0.55
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_05. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_05_candidate_03",
+            "summary": "medium candidate for task_05.",
+            "highlighted_strengths": [
+              "frontend",
+              "evaluation",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "frontend": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_05_candidate_04",
+            "role": "strong_general",
+            "capabilities": {
+              "frontend": 0.85,
+              "evaluation": 0.75,
+              "bayesian_modeling": 0.6,
+              "backend": 0.6
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_05. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_05_candidate_04",
+            "summary": "strong_general candidate for task_05.",
+            "highlighted_strengths": [
+              "frontend",
+              "evaluation",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "frontend": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_05_candidate_05",
+            "role": "strong_specialist",
+            "capabilities": {
+              "frontend": 0.95,
+              "evaluation": 0.2,
+              "bayesian_modeling": 0.45,
+              "backend": 0.45
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_05. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_05_candidate_05",
+            "summary": "strong_specialist candidate for task_05.",
+            "highlighted_strengths": [
+              "frontend",
+              "bayesian_modeling",
+              "backend"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "frontend": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "backend": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_05_candidate_01": "distractor",
+          "task_05_candidate_02": "weak",
+          "task_05_candidate_03": "medium",
+          "task_05_candidate_04": "strong_general",
+          "task_05_candidate_05": "strong_specialist"
+        },
+        "candidate_off_topic_needs": {
+          "task_05_candidate_01": "mentorship",
+          "task_05_candidate_02": "networking",
+          "task_05_candidate_03": "funding",
+          "task_05_candidate_04": "career_growth",
+          "task_05_candidate_05": "executive_coaching"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_06",
+        "title": "Ship Research Collaboration Portal [failure-case]",
+        "description": "Ship Research Collaboration Portal for a marketplace initiative. Needs strong execution across recommender_systems, bayesian_modeling, product_design, paper_writing. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "recommender_systems": 0.67,
+          "bayesian_modeling": 0.53,
+          "product_design": 1.0,
+          "paper_writing": 1.0
+        },
+        "metadata": {
+          "urgency": "medium",
+          "budget": "premium",
+          "visibility": "medium",
+          "duration_weeks": 8,
+          "domain": "research"
+        },
+        "offer_skills": {
+          "recommender_systems": 0.67,
+          "bayesian_modeling": 0.53,
+          "product_design": 1.0,
+          "paper_writing": 1.0
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_06_proposer",
+        "role": "requester",
+        "capabilities": {
+          "product_design": 0.1,
+          "paper_writing": 0.1,
+          "recommender_systems": 0.45,
+          "bayesian_modeling": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "recommender_systems": 0.7,
+          "bayesian_modeling": 0.78,
+          "product_design": 0.9,
+          "paper_writing": 0.54
+        },
+        "preferences": {
+          "communication_style": "async_first",
+          "timezone": "UTC",
+          "urgency_preference": "high"
+        },
+        "constraints": {
+          "meeting_load": 0.38
+        },
+        "history_summary": "Requester for task 06; previous project delivery record is mixed."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_06_candidate_01",
+            "role": "medium",
+            "capabilities": {
+              "product_design": 0.55,
+              "paper_writing": 0.55,
+              "recommender_systems": 0.55,
+              "bayesian_modeling": 0.55
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_06. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_06_candidate_01",
+            "summary": "medium candidate for task_06.",
+            "highlighted_strengths": [
+              "product_design",
+              "paper_writing",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "product_design": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_06_candidate_02",
+            "role": "strong_specialist",
+            "capabilities": {
+              "product_design": 0.95,
+              "paper_writing": 0.2,
+              "recommender_systems": 0.45,
+              "bayesian_modeling": 0.45
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_06. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_06_candidate_02",
+            "summary": "strong_specialist candidate for task_06.",
+            "highlighted_strengths": [
+              "product_design",
+              "recommender_systems",
+              "bayesian_modeling"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "product_design": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_06_candidate_03",
+            "role": "strong_general",
+            "capabilities": {
+              "product_design": 0.85,
+              "paper_writing": 0.75,
+              "recommender_systems": 0.6,
+              "bayesian_modeling": 0.6
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_06. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_06_candidate_03",
+            "summary": "strong_general candidate for task_06.",
+            "highlighted_strengths": [
+              "product_design",
+              "paper_writing",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "product_design": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_06_candidate_04",
+            "role": "weak",
+            "capabilities": {
+              "product_design": 0.25,
+              "paper_writing": 0.2,
+              "recommender_systems": 0.4,
+              "bayesian_modeling": 0.4
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_06. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_06_candidate_04",
+            "summary": "weak candidate for task_06.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "bayesian_modeling",
+              "product_design"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "product_design": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_06_candidate_05",
+            "role": "distractor",
+            "capabilities": {
+              "product_design": 0.3,
+              "paper_writing": 0.1,
+              "recommender_systems": 0.1,
+              "bayesian_modeling": 0.1
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_06. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_06_candidate_05",
+            "summary": "distractor candidate for task_06.",
+            "highlighted_strengths": [
+              "product_design",
+              "paper_writing",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "product_design": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "bayesian_modeling": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_06_candidate_01": "medium",
+          "task_06_candidate_02": "strong_specialist",
+          "task_06_candidate_03": "strong_general",
+          "task_06_candidate_04": "weak",
+          "task_06_candidate_05": "distractor"
+        },
+        "candidate_off_topic_needs": {
+          "task_06_candidate_01": "press_relations",
+          "task_06_candidate_02": "patenting",
+          "task_06_candidate_03": "mentorship",
+          "task_06_candidate_04": "networking",
+          "task_06_candidate_05": "funding"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_07",
+        "title": "Develop Demand Forecasting Workflow [failure-case]",
+        "description": "Develop Demand Forecasting Workflow for a matching initiative. Needs strong execution across data_analysis, communication, frontend, statistics, paper_writing. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "data_analysis": 0.64,
+          "communication": 1.0,
+          "frontend": 0.79,
+          "statistics": 0.75,
+          "paper_writing": 0.5
+        },
+        "metadata": {
+          "urgency": "medium",
+          "budget": "premium",
+          "visibility": "high",
+          "duration_weeks": 10,
+          "domain": "research"
+        },
+        "offer_skills": {
+          "data_analysis": 0.64,
+          "communication": 1.0,
+          "frontend": 0.79,
+          "statistics": 0.75,
+          "paper_writing": 0.5
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_07_proposer",
+        "role": "requester",
+        "capabilities": {
+          "communication": 0.1,
+          "frontend": 0.1,
+          "statistics": 0.45,
+          "data_analysis": 0.45,
+          "paper_writing": 0.45,
+          "project_management": 0.65
+        },
+        "needs": {
+          "data_analysis": 0.61,
+          "communication": 0.7,
+          "frontend": 0.67,
+          "statistics": 0.72,
+          "paper_writing": 0.61
+        },
+        "preferences": {
+          "communication_style": "structured_sync",
+          "timezone": "UTC",
+          "urgency_preference": "low"
+        },
+        "constraints": {
+          "meeting_load": 0.42
+        },
+        "history_summary": "Requester for task 07; previous project delivery record is solid."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_07_candidate_01",
+            "role": "strong_specialist",
+            "capabilities": {
+              "communication": 0.95,
+              "frontend": 0.2,
+              "statistics": 0.45,
+              "data_analysis": 0.45,
+              "paper_writing": 0.45
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_07. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_07_candidate_01",
+            "summary": "strong_specialist candidate for task_07.",
+            "highlighted_strengths": [
+              "communication",
+              "statistics",
+              "data_analysis"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_07_candidate_02",
+            "role": "weak",
+            "capabilities": {
+              "communication": 0.25,
+              "frontend": 0.2,
+              "statistics": 0.4,
+              "data_analysis": 0.4,
+              "paper_writing": 0.4
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_07. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_07_candidate_02",
+            "summary": "weak candidate for task_07.",
+            "highlighted_strengths": [
+              "statistics",
+              "data_analysis",
+              "paper_writing"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_07_candidate_03",
+            "role": "strong_general",
+            "capabilities": {
+              "communication": 0.85,
+              "frontend": 0.75,
+              "statistics": 0.6,
+              "data_analysis": 0.6,
+              "paper_writing": 0.6
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_07. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_07_candidate_03",
+            "summary": "strong_general candidate for task_07.",
+            "highlighted_strengths": [
+              "communication",
+              "frontend",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_07_candidate_04",
+            "role": "medium",
+            "capabilities": {
+              "communication": 0.55,
+              "frontend": 0.55,
+              "statistics": 0.55,
+              "data_analysis": 0.55,
+              "paper_writing": 0.55
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_07. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_07_candidate_04",
+            "summary": "medium candidate for task_07.",
+            "highlighted_strengths": [
+              "communication",
+              "frontend",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_07_candidate_05",
+            "role": "distractor",
+            "capabilities": {
+              "communication": 0.3,
+              "frontend": 0.1,
+              "statistics": 0.1,
+              "data_analysis": 0.1,
+              "paper_writing": 0.1
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_07. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_07_candidate_05",
+            "summary": "distractor candidate for task_07.",
+            "highlighted_strengths": [
+              "communication",
+              "frontend",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "frontend": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_07_candidate_01": "strong_specialist",
+          "task_07_candidate_02": "weak",
+          "task_07_candidate_03": "strong_general",
+          "task_07_candidate_04": "medium",
+          "task_07_candidate_05": "distractor"
+        },
+        "candidate_off_topic_needs": {
+          "task_07_candidate_01": "career_growth",
+          "task_07_candidate_02": "executive_coaching",
+          "task_07_candidate_03": "press_relations",
+          "task_07_candidate_04": "patenting",
+          "task_07_candidate_05": "mentorship"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_08",
+        "title": "Build Knowledge Graph Explorer [failure-case]",
+        "description": "Build Knowledge Graph Explorer for a analytics initiative. Needs strong execution across statistics, bayesian_modeling, ml_systems. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "statistics": 0.61,
+          "bayesian_modeling": 1.0,
+          "ml_systems": 0.78
+        },
+        "metadata": {
+          "urgency": "medium",
+          "budget": "premium",
+          "visibility": "medium",
+          "duration_weeks": 15,
+          "domain": "ml_platform"
+        },
+        "offer_skills": {
+          "statistics": 0.61,
+          "bayesian_modeling": 1.0,
+          "ml_systems": 0.78
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_08_proposer",
+        "role": "requester",
+        "capabilities": {
+          "bayesian_modeling": 0.1,
+          "ml_systems": 0.1,
+          "statistics": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "statistics": 0.82,
+          "bayesian_modeling": 0.68,
+          "ml_systems": 0.92
+        },
+        "preferences": {
+          "communication_style": "mixed",
+          "timezone": "SGT",
+          "urgency_preference": "low"
+        },
+        "constraints": {
+          "meeting_load": 0.47
+        },
+        "history_summary": "Requester for task 08; previous project delivery record is solid."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_08_candidate_01",
+            "role": "distractor",
+            "capabilities": {
+              "bayesian_modeling": 0.3,
+              "ml_systems": 0.1,
+              "statistics": 0.1
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_08. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_08_candidate_01",
+            "summary": "distractor candidate for task_08.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "ml_systems",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "bayesian_modeling": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_08_candidate_02",
+            "role": "strong_general",
+            "capabilities": {
+              "bayesian_modeling": 0.85,
+              "ml_systems": 0.75,
+              "statistics": 0.6
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_08. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_08_candidate_02",
+            "summary": "strong_general candidate for task_08.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "ml_systems",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "bayesian_modeling": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_08_candidate_03",
+            "role": "strong_specialist",
+            "capabilities": {
+              "bayesian_modeling": 0.95,
+              "ml_systems": 0.2,
+              "statistics": 0.45
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_08. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_08_candidate_03",
+            "summary": "strong_specialist candidate for task_08.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "statistics",
+              "ml_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "bayesian_modeling": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_08_candidate_04",
+            "role": "medium",
+            "capabilities": {
+              "bayesian_modeling": 0.55,
+              "ml_systems": 0.55,
+              "statistics": 0.55
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_08. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_08_candidate_04",
+            "summary": "medium candidate for task_08.",
+            "highlighted_strengths": [
+              "bayesian_modeling",
+              "ml_systems",
+              "statistics"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "bayesian_modeling": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_08_candidate_05",
+            "role": "weak",
+            "capabilities": {
+              "bayesian_modeling": 0.25,
+              "ml_systems": 0.2,
+              "statistics": 0.4
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_08. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_08_candidate_05",
+            "summary": "weak candidate for task_08.",
+            "highlighted_strengths": [
+              "statistics",
+              "bayesian_modeling",
+              "ml_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "bayesian_modeling": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "ml_systems": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "statistics": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_08_candidate_01": "distractor",
+          "task_08_candidate_02": "strong_general",
+          "task_08_candidate_03": "strong_specialist",
+          "task_08_candidate_04": "medium",
+          "task_08_candidate_05": "weak"
+        },
+        "candidate_off_topic_needs": {
+          "task_08_candidate_01": "networking",
+          "task_08_candidate_02": "funding",
+          "task_08_candidate_03": "career_growth",
+          "task_08_candidate_04": "executive_coaching",
+          "task_08_candidate_05": "press_relations"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_09",
+        "title": "Optimize Retrieval Stack [failure-case]",
+        "description": "Optimize Retrieval Stack for a marketplace initiative. Needs strong execution across recommender_systems, data_analysis, python. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "recommender_systems": 1.0,
+          "data_analysis": 0.92,
+          "python": 0.67
+        },
+        "metadata": {
+          "urgency": "medium",
+          "budget": "premium",
+          "visibility": "high",
+          "duration_weeks": 10,
+          "domain": "ml_platform"
+        },
+        "offer_skills": {
+          "recommender_systems": 1.0,
+          "data_analysis": 0.92,
+          "python": 0.67
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_09_proposer",
+        "role": "requester",
+        "capabilities": {
+          "recommender_systems": 0.1,
+          "data_analysis": 0.1,
+          "python": 0.45,
+          "communication": 0.55,
+          "project_management": 0.65
+        },
+        "needs": {
+          "recommender_systems": 0.67,
+          "data_analysis": 0.81,
+          "python": 0.85
+        },
+        "preferences": {
+          "communication_style": "mixed",
+          "timezone": "US_Eastern",
+          "urgency_preference": "low"
+        },
+        "constraints": {
+          "meeting_load": 0.75
+        },
+        "history_summary": "Requester for task 09; previous project delivery record is mixed."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_09_candidate_01",
+            "role": "distractor",
+            "capabilities": {
+              "recommender_systems": 0.3,
+              "data_analysis": 0.1,
+              "python": 0.1
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_09. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_09_candidate_01",
+            "summary": "distractor candidate for task_09.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "data_analysis",
+              "python"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "recommender_systems": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_09_candidate_02",
+            "role": "weak",
+            "capabilities": {
+              "recommender_systems": 0.25,
+              "data_analysis": 0.2,
+              "python": 0.4
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_09. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_09_candidate_02",
+            "summary": "weak candidate for task_09.",
+            "highlighted_strengths": [
+              "python",
+              "recommender_systems",
+              "data_analysis"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "recommender_systems": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_09_candidate_03",
+            "role": "strong_general",
+            "capabilities": {
+              "recommender_systems": 0.85,
+              "data_analysis": 0.75,
+              "python": 0.6
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_09. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_09_candidate_03",
+            "summary": "strong_general candidate for task_09.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "data_analysis",
+              "python"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "recommender_systems": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_09_candidate_04",
+            "role": "medium",
+            "capabilities": {
+              "recommender_systems": 0.55,
+              "data_analysis": 0.55,
+              "python": 0.55
+            },
+            "needs": {
+              "funding": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_09. Has a single off-topic need: funding."
+          },
+          "candidate_card": {
+            "candidate_id": "task_09_candidate_04",
+            "summary": "medium candidate for task_09.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "data_analysis",
+              "python"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "recommender_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "funding",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_09_candidate_05",
+            "role": "strong_specialist",
+            "capabilities": {
+              "recommender_systems": 0.95,
+              "data_analysis": 0.2,
+              "python": 0.45
+            },
+            "needs": {
+              "career_growth": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_09. Has a single off-topic need: career_growth."
+          },
+          "candidate_card": {
+            "candidate_id": "task_09_candidate_05",
+            "summary": "strong_specialist candidate for task_09.",
+            "highlighted_strengths": [
+              "recommender_systems",
+              "python",
+              "data_analysis"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "recommender_systems": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "data_analysis": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "python": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "career_growth",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_09_candidate_01": "distractor",
+          "task_09_candidate_02": "weak",
+          "task_09_candidate_03": "strong_general",
+          "task_09_candidate_04": "medium",
+          "task_09_candidate_05": "strong_specialist"
+        },
+        "candidate_off_topic_needs": {
+          "task_09_candidate_01": "patenting",
+          "task_09_candidate_02": "mentorship",
+          "task_09_candidate_03": "networking",
+          "task_09_candidate_04": "funding",
+          "task_09_candidate_05": "career_growth"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    },
+    {
+      "task": {
+        "task_id": "task_10",
+        "title": "Create Project Risk Scorer [failure-case]",
+        "description": "Create Project Risk Scorer for a ml_platform initiative. Needs strong execution across communication, evaluation, paper_writing, recommender_systems. (single off-topic need per candidate \u2014 diagnostic dataset).",
+        "required_skills": {
+          "communication": 1.0,
+          "evaluation": 0.78,
+          "paper_writing": 0.85,
+          "recommender_systems": 0.68
+        },
+        "metadata": {
+          "urgency": "high",
+          "budget": "lean",
+          "visibility": "medium",
+          "duration_weeks": 12,
+          "domain": "marketplace"
+        },
+        "offer_skills": {
+          "communication": 1.0,
+          "evaluation": 0.78,
+          "paper_writing": 0.85,
+          "recommender_systems": 0.68
+        }
+      },
+      "proposer_profile": {
+        "user_id": "task_10_proposer",
+        "role": "requester",
+        "capabilities": {
+          "communication": 0.1,
+          "paper_writing": 0.1,
+          "evaluation": 0.45,
+          "recommender_systems": 0.45,
+          "project_management": 0.65
+        },
+        "needs": {
+          "communication": 0.56,
+          "evaluation": 0.68,
+          "paper_writing": 0.77,
+          "recommender_systems": 0.55
+        },
+        "preferences": {
+          "communication_style": "async_first",
+          "timezone": "US_Pacific",
+          "urgency_preference": "medium"
+        },
+        "constraints": {
+          "meeting_load": 0.78
+        },
+        "history_summary": "Requester for task 10; previous project delivery record is mixed."
+      },
+      "candidates": [
+        {
+          "candidate_profile": {
+            "user_id": "task_10_candidate_01",
+            "role": "distractor",
+            "capabilities": {
+              "communication": 0.3,
+              "paper_writing": 0.1,
+              "evaluation": 0.1,
+              "recommender_systems": 0.1
+            },
+            "needs": {
+              "executive_coaching": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic distractor for task_10. Has a single off-topic need: executive_coaching."
+          },
+          "candidate_card": {
+            "candidate_id": "task_10_candidate_01",
+            "summary": "distractor candidate for task_10.",
+            "highlighted_strengths": [
+              "communication",
+              "paper_writing",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.3,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.1,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "distractor",
+            "off_topic_need": "executive_coaching",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_10_candidate_02",
+            "role": "medium",
+            "capabilities": {
+              "communication": 0.55,
+              "paper_writing": 0.55,
+              "evaluation": 0.55,
+              "recommender_systems": 0.55
+            },
+            "needs": {
+              "press_relations": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic medium for task_10. Has a single off-topic need: press_relations."
+          },
+          "candidate_card": {
+            "candidate_id": "task_10_candidate_02",
+            "summary": "medium candidate for task_10.",
+            "highlighted_strengths": [
+              "communication",
+              "paper_writing",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.55,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "medium",
+            "off_topic_need": "press_relations",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_10_candidate_03",
+            "role": "strong_specialist",
+            "capabilities": {
+              "communication": 0.95,
+              "paper_writing": 0.2,
+              "evaluation": 0.45,
+              "recommender_systems": 0.45
+            },
+            "needs": {
+              "patenting": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_specialist for task_10. Has a single off-topic need: patenting."
+          },
+          "candidate_card": {
+            "candidate_id": "task_10_candidate_03",
+            "summary": "strong_specialist candidate for task_10.",
+            "highlighted_strengths": [
+              "communication",
+              "evaluation",
+              "recommender_systems"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.95,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.45,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_specialist",
+            "off_topic_need": "patenting",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_10_candidate_04",
+            "role": "strong_general",
+            "capabilities": {
+              "communication": 0.85,
+              "paper_writing": 0.75,
+              "evaluation": 0.6,
+              "recommender_systems": 0.6
+            },
+            "needs": {
+              "mentorship": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic strong_general for task_10. Has a single off-topic need: mentorship."
+          },
+          "candidate_card": {
+            "candidate_id": "task_10_candidate_04",
+            "summary": "strong_general candidate for task_10.",
+            "highlighted_strengths": [
+              "communication",
+              "paper_writing",
+              "evaluation"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.85,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.75,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.6,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "strong_general",
+            "off_topic_need": "mentorship",
+            "off_topic_intensity": 0.4
+          }
+        },
+        {
+          "candidate_profile": {
+            "user_id": "task_10_candidate_05",
+            "role": "weak",
+            "capabilities": {
+              "communication": 0.25,
+              "paper_writing": 0.2,
+              "evaluation": 0.4,
+              "recommender_systems": 0.4
+            },
+            "needs": {
+              "networking": 0.4
+            },
+            "preferences": {
+              "availability": "high",
+              "timezone": "UTC",
+              "current_load": 0.4
+            },
+            "constraints": {
+              "workload": 0.4
+            },
+            "history_summary": "Synthetic weak for task_10. Has a single off-topic need: networking."
+          },
+          "candidate_card": {
+            "candidate_id": "task_10_candidate_05",
+            "summary": "weak candidate for task_10.",
+            "highlighted_strengths": [
+              "evaluation",
+              "recommender_systems",
+              "communication"
+            ],
+            "highlighted_risks": [],
+            "explanation": "Synthetic failure-case candidate. Single off-topic high-intensity need is intentional."
+          },
+          "requester_personas": [],
+          "candidate_personas": [],
+          "context_latents": {},
+          "capability_priors": {
+            "communication": {
+              "mu_init": 0.25,
+              "sigma_init": 0.1
+            },
+            "paper_writing": {
+              "mu_init": 0.2,
+              "sigma_init": 0.1
+            },
+            "evaluation": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            },
+            "recommender_systems": {
+              "mu_init": 0.4,
+              "sigma_init": 0.1
+            }
+          },
+          "tier": "faithfulness_failure_case",
+          "tier_meta": {
+            "template": "weak",
+            "off_topic_need": "networking",
+            "off_topic_intensity": 0.4
+          }
+        }
+      ],
+      "metadata": {
+        "candidate_templates": {
+          "task_10_candidate_01": "distractor",
+          "task_10_candidate_02": "medium",
+          "task_10_candidate_03": "strong_specialist",
+          "task_10_candidate_04": "strong_general",
+          "task_10_candidate_05": "weak"
+        },
+        "candidate_off_topic_needs": {
+          "task_10_candidate_01": "executive_coaching",
+          "task_10_candidate_02": "press_relations",
+          "task_10_candidate_03": "patenting",
+          "task_10_candidate_04": "mentorship",
+          "task_10_candidate_05": "networking"
+        },
+        "failure_mode": "single_off_topic_need_with_high_intensity"
+      }
+    }
+  ]
+}
