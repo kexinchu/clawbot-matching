@@ -19,7 +19,7 @@ from simulator.types import (
     MatchingContext,
     OutcomeResult,
 )
-from simulator.utils import skill_coverage
+from simulator.utils import offer_need_fit, skill_coverage
 
 
 class OutcomeSimulator:
@@ -61,6 +61,7 @@ class OutcomeSimulator:
             req=req, cand=cand, skill_cov=skill_cov,
             num_risks=len(context.card.highlighted_risks),
             bilateral=bilateral,
+            context=context,
         )
 
         # ---- Expected rounds ----
@@ -82,8 +83,10 @@ class OutcomeSimulator:
             agreement_prob=agreement_prob, completion_prob=completion_prob,
         )
         cand_sat = self._compute_candidate_satisfaction(
-            cand=cand, skill_cov=skill_cov,
+            cand=cand,
+            skill_cov=skill_cov,
             agreement_prob=agreement_prob,
+            context=context,
         )
 
         # ---- Refine completion prob with satisfaction ----
@@ -120,6 +123,7 @@ class OutcomeSimulator:
         skill_cov: float,
         num_risks: int,
         bilateral,
+        context: MatchingContext,
     ) -> float:
         """
         agreement_probability ∈ [0, 1].
@@ -128,6 +132,7 @@ class OutcomeSimulator:
           - joint_action: mutual_accept boosts, one_reject penalizes
           - utility gap: larger gap → more negotiation friction
           - skill coverage: better coverage → higher agreement
+          - observable offer/need fit: better candidate-side upside → higher agreement
           - highlighted risks: more risks → lower agreement
           - risk persona concerns
         """
@@ -147,6 +152,11 @@ class OutcomeSimulator:
         # Skill coverage contribution
         prob += 0.15 * (skill_cov - 0.5)  # +0.075 at full coverage, -0.075 at 0
 
+        # Candidate-side observable upside. This is the first outcome-stage
+        # point where TaskSpec.offers directly affects bilateral validity.
+        fit = offer_need_fit(context.task.offers, context.candidate.needs)
+        prob += 0.12 * (fit - 0.5)
+
         # Risk penalty
         prob -= 0.05 * num_risks
 
@@ -164,6 +174,8 @@ class OutcomeSimulator:
             if "risk" in op.persona_role or "trust" in op.persona_role
         )
         prob -= 0.03 * (risk_concerns_req + risk_concerns_cand)
+
+        prob += self._deterministic_noise(context, scale=0.025)
 
         return _clamp(prob)
 
@@ -255,16 +267,55 @@ class OutcomeSimulator:
         cand,
         skill_cov: float,
         agreement_prob: float,
+        context: MatchingContext,
     ) -> float:
         """
         candidate_satisfaction ∈ [0, 1].
+
+        Fixed v3 oracle rule:
+          - observable offer/need fit directly increases candidate-side value
+          - workload and availability lower capacity/satisfaction
+          - visibility and budget add observable task upside
+          - hidden interpersonal and opportunity latents add private variation
+          - small deterministic nonlinear noise avoids directly copying MapScore
         """
+        fit = offer_need_fit(context.task.offers, context.candidate.needs)
+        workload = float(context.candidate.constraints.get(
+            "workload",
+            context.candidate.preferences.get("current_load", 0.5),
+        ))
+        availability = context.candidate.preferences.get("availability", "medium")
+        availability_score = {"high": 1.0, "medium": 0.6, "low": 0.25}.get(str(availability), 0.6)
+        capacity = _clamp(0.60 * (1.0 - workload) + 0.40 * availability_score)
+
+        visibility = context.task.metadata.get("visibility", "medium")
+        budget = context.task.metadata.get("budget", "competitive")
+        visibility_score = {"high": 1.0, "medium": 0.6, "low": 0.25}.get(str(visibility), 0.6)
+        budget_score = {"premium": 1.0, "competitive": 0.65, "lean": 0.3}.get(str(budget), 0.65)
+        visible_upside = 0.45 * visibility_score + 0.55 * budget_score
+
+        affinity = context.latent_interpersonal_affinity or 0.0
+        opportunity = context.latent_opportunity_bias or 0.0
+        latent_bonus = 0.5 + 0.25 * affinity + 0.25 * opportunity
+
+        nonlinear_fit = fit ** 1.35
         sat = 0.0
-        sat += 0.35 * (cand.utility + 1.0) / 2.0
-        sat += 0.25 * skill_cov
-        sat += 0.25 * agreement_prob
-        sat += 0.15 * cand.confidence
+        sat += 0.26 * (cand.utility + 1.0) / 2.0
+        sat += 0.24 * nonlinear_fit
+        sat += 0.15 * capacity
+        sat += 0.14 * visible_upside
+        sat += 0.10 * agreement_prob
+        sat += 0.07 * latent_bonus
+        sat += 0.04 * cand.confidence
+        sat += self._deterministic_noise(context, scale=0.02)
         return _clamp(sat)
+
+    @staticmethod
+    def _deterministic_noise(context: MatchingContext, scale: float) -> float:
+        key = f"{context.task.task_id}:{context.candidate.user_id}"
+        raw = sum((idx + 1) * ord(ch) for idx, ch in enumerate(key)) % 997
+        centered = (raw / 996.0) - 0.5
+        return scale * centered
 
     # ------------------------------------------------------------------
     # Rationale builder

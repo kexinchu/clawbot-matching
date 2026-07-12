@@ -22,7 +22,7 @@ from simulator.types import (
     TaskSpec,
     UserProfile,
 )
-from simulator.utils import risk_score_from_concerns, skill_coverage
+from simulator.utils import offer_need_fit, risk_score_from_concerns, skill_coverage
 
 
 class RuleBasedBackend(BaseBackend):
@@ -414,12 +414,14 @@ class RuleBasedBackend(BaseBackend):
         return clamp_score(cov), concerns
 
     def _task_interest(self, ctx: MatchingContext) -> tuple[float, list[str]]:
-        """Task interest: keyword overlap + latent candidate preferences signal."""
+        """Task interest: visible task-offer/need fit + keyword and latent signals."""
         interests = ctx.candidate.preferences.get("interests", "")
         desc = ctx.task.description.lower()
         kw_hits = sum(1 for kw in interests.replace(",", " ").split() if kw in desc)
-        score = min(1.0, kw_hits / max(1, 3))
-        concerns = [] if score >= 0.4 else ["Task description shows limited alignment with candidate interests"]
+        keyword_score = min(1.0, kw_hits / max(1, 3))
+        fit = offer_need_fit(ctx.task.offers, ctx.candidate.needs)
+        score = 0.25 * keyword_score + 0.75 * fit
+        concerns = [] if score >= 0.4 else ["Task offers show limited alignment with candidate needs"]
 
         # Latent candidate preferences: shift score by latent signal × 0.15
         latent_prefs = ctx.latent_candidate_preferences
@@ -432,7 +434,10 @@ class RuleBasedBackend(BaseBackend):
     def _opportunity_cost(self, ctx: MatchingContext) -> tuple[float, list[str]]:
         """High opportunity cost → lower willingness (score is a penalty-avoidance metric)."""
         busy = ctx.candidate.preferences.get("current_load", "medium")
-        if busy == "high":
+        if isinstance(busy, (int, float)):
+            base = 1.0 - float(busy)
+            concerns = ["High current workload — opportunity cost is significant"] if float(busy) > 0.75 else []
+        elif busy == "high":
             base = 0.35
             concerns = ["High current workload — opportunity cost is significant"]
         elif busy == "medium":
@@ -449,6 +454,9 @@ class RuleBasedBackend(BaseBackend):
         if bias is not None:
             base += 0.12 * bias  # bias ∈ [-1, 1] → shift ∈ [-0.12, +0.12]
 
+        # Strong observable offer/need fit offsets opportunity cost.
+        base += 0.40 * (offer_need_fit(ctx.task.offers, ctx.candidate.needs) - 0.5)
+
         return clamp_score(base), concerns
 
     def _workload_balance(self, ctx: MatchingContext) -> tuple[float, list[str]]:
@@ -460,8 +468,9 @@ class RuleBasedBackend(BaseBackend):
         return clamp_score(score), concerns
 
     def _reciprocity_benefit(self, ctx: MatchingContext) -> tuple[float, list[str]]:
-        """Reciprocity benefit modulated by latent opportunity bias."""
+        """Reciprocity benefit from visible upside plus observable offer fit."""
         visibility = ctx.task.metadata.get("visibility", "medium")
+        budget = ctx.task.metadata.get("budget", "competitive")
         portfolio = ctx.task.metadata.get("portfolio_boost", False)
         score = 0.5
         if portfolio:
@@ -470,6 +479,11 @@ class RuleBasedBackend(BaseBackend):
             score += 0.15
         elif visibility == "low":
             score -= 0.1
+        if budget == "premium":
+            score += 0.12
+        elif budget == "lean":
+            score -= 0.10
+        score += 0.50 * (offer_need_fit(ctx.task.offers, ctx.candidate.needs) - 0.5)
         concerns = [] if score >= 0.6 else ["Low reciprocity / reputational upside"]
 
         # Latent opportunity bias modulates reciprocity perception ±0.10

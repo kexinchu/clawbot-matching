@@ -2,6 +2,7 @@
 
 Output:
     simulator/20_Tasks_Testset.json
+    simulator/20_Tasks_Testset_v2.json (with --version v2)
 
 Each task contains:
   - one proposer/requester profile
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import json
 import random
+import argparse
 from dataclasses import asdict
 from pathlib import Path
 
@@ -28,6 +30,8 @@ from simulator.types import CandidateCard, MatchingContext, TaskSpec, UserProfil
 
 
 OUTPUT_PATH = Path(__file__).resolve().parent / "20_Tasks_Testset.json"
+V2_OUTPUT_PATH = Path(__file__).resolve().parent / "20_Tasks_Testset_v2.json"
+V3_OUTPUT_PATH = Path(__file__).resolve().parent / "20_Tasks_Testset_v3.json"
 
 SKILL_POOL = [
     "python",
@@ -86,6 +90,24 @@ TASK_DOMAINS = [
     "ml_platform",
     "analytics",
 ]
+
+OFFER_POOL_BY_SKILL = {
+    "python": ["python mentoring", "backend automation experience"],
+    "ml_systems": ["ml systems leadership", "model deployment experience"],
+    "data_engineering": ["data pipeline ownership", "analytics infrastructure practice"],
+    "bayesian_modeling": ["bayesian modeling mentorship", "statistical inference practice"],
+    "paper_writing": ["research writing collaboration", "publication strategy support"],
+    "frontend": ["frontend product polish", "dashboard design experience"],
+    "backend": ["backend architecture practice", "api design ownership"],
+    "product_design": ["product design portfolio growth", "user research exposure"],
+    "project_management": ["project leadership experience", "cross functional coordination"],
+    "communication": ["stakeholder communication practice", "structured collaboration"],
+    "recommender_systems": ["recommender systems experience", "ranking evaluation practice"],
+    "evaluation": ["evaluation methodology exposure", "benchmark design experience"],
+    "statistics": ["statistical analysis mentorship", "experiment design practice"],
+    "distributed_systems": ["distributed systems experience", "scalable service design"],
+    "data_analysis": ["data analysis practice", "insight generation ownership"],
+}
 
 
 def _round_score(value: float) -> float:
@@ -163,9 +185,58 @@ def _make_candidate(task_idx: int, cand_idx: int, rng: random.Random, required_s
     )
 
 
-def _make_task(task_idx: int, rng: random.Random) -> TaskSpec:
+def _make_task_offers(
+    required_skills: dict[str, float],
+    rng: random.Random,
+    task_idx: int,
+    version: str = "v2",
+) -> dict[str, float]:
+    """Create task benefits that can semantically match candidate needs.
+
+    Offer labels intentionally reuse skill/benefit words from candidate need
+    descriptions so MapScore's S_need has real variance across tasks instead
+    of collapsing to the same zero value for every candidate.
+    """
+    if version == "v3":
+        offers: dict[str, float] = {}
+        ranked_skills = sorted(required_skills, key=required_skills.get, reverse=True)
+        for skill in ranked_skills[:3]:
+            offers[skill] = _round_score(0.65 + 0.3 * required_skills[skill] + rng.uniform(-0.04, 0.04))
+
+        decoy_pool = [skill for skill in SKILL_POOL if skill not in required_skills]
+        for skill in rng.sample(decoy_pool, k=min(4, len(decoy_pool))):
+            offers[skill] = _round_score(rng.uniform(0.05, 0.25))
+        return offers
+
+    offers: dict[str, float] = {}
+    ranked_skills = sorted(required_skills, key=required_skills.get, reverse=True)
+    for skill in ranked_skills[:3]:
+        label = rng.choice(OFFER_POOL_BY_SKILL.get(skill, [f"{skill} experience"]))
+        offers[label] = _round_score(0.55 + 0.4 * required_skills[skill] + rng.uniform(-0.08, 0.08))
+
+    domain_offer = {
+        "research": "research collaboration",
+        "matching": "matching system experience",
+        "marketplace": "marketplace product exposure",
+        "ml_platform": "ml platform deployment practice",
+        "analytics": "analytics decision support",
+    }[TASK_DOMAINS[task_idx % len(TASK_DOMAINS)]]
+    offers[domain_offer] = _round_score(rng.uniform(0.45, 0.9))
+    return offers
+
+
+def _make_task(
+    task_idx: int,
+    rng: random.Random,
+    include_offers: bool = False,
+    benchmark_version: str = "v1",
+) -> TaskSpec:
     title = TASK_TITLES[task_idx % len(TASK_TITLES)]
     required_skills = _sample_skill_scores(rng, SKILL_POOL, 3, 5)
+    offers = (
+        _make_task_offers(required_skills, rng, task_idx, version=benchmark_version)
+        if include_offers else {}
+    )
     return TaskSpec(
         task_id=f"task_{task_idx:02d}",
         title=title,
@@ -174,6 +245,7 @@ def _make_task(task_idx: int, rng: random.Random) -> TaskSpec:
             f"Needs strong execution across {', '.join(required_skills.keys())}."
         ),
         required_skills=required_skills,
+        offers=offers,
         metadata={
             "urgency": rng.choice(["high", "medium", "low"]),
             "budget": rng.choice(["lean", "competitive", "premium"]),
@@ -244,7 +316,12 @@ def _make_context(
     )
 
 
-def build_testset(num_tasks: int = 20, candidates_per_task: int = 20) -> dict:
+def build_testset(
+    num_tasks: int = 20,
+    candidates_per_task: int = 20,
+    include_offers: bool = False,
+    benchmark_version: str = "v1",
+) -> dict:
     cfg = SimulatorConfig(
         backend_type="mock",
         random_seed=42,
@@ -261,7 +338,12 @@ def build_testset(num_tasks: int = 20, candidates_per_task: int = 20) -> dict:
 
     tasks = []
     for task_idx in range(1, num_tasks + 1):
-        task = _make_task(task_idx, rng)
+        task = _make_task(
+            task_idx,
+            rng,
+            include_offers=include_offers,
+            benchmark_version=benchmark_version,
+        )
         proposer = _make_proposer(task_idx, rng, task.required_skills)
         candidates = []
 
@@ -302,15 +384,34 @@ def build_testset(num_tasks: int = 20, candidates_per_task: int = 20) -> dict:
             "num_candidate_personas_per_pair": cfg.num_candidate_personas,
             "backend_type": cfg.backend_type,
             "random_seed": cfg.random_seed,
+            "benchmark_version": benchmark_version,
+            "has_task_offers": include_offers,
+            "outcome_oracle": (
+                "v3_offer_need_fit_workload_visibility_budget_hidden_latents"
+                if benchmark_version == "v3" else "legacy"
+            ),
         },
         "tasks": tasks,
     }
 
 
 def main() -> None:
-    payload = build_testset()
-    OUTPUT_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(f"Wrote 20-task simulator testset to {OUTPUT_PATH}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version",
+        choices=("v1", "v2", "v3"),
+        default="v1",
+        help="v2 adds explicit task offers; v3 fixes the benchmark version for the offer-aware outcome oracle.",
+    )
+    parser.add_argument("--output", type=Path, default=None, help="Output JSON path.")
+    args = parser.parse_args()
+
+    include_offers = args.version in {"v2", "v3"}
+    default_path = {"v1": OUTPUT_PATH, "v2": V2_OUTPUT_PATH, "v3": V3_OUTPUT_PATH}[args.version]
+    output_path = args.output or default_path
+    payload = build_testset(include_offers=include_offers, benchmark_version=args.version)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Wrote 20-task simulator testset to {output_path}")
 
 
 if __name__ == "__main__":

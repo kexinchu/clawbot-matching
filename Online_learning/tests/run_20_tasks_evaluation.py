@@ -1,9 +1,13 @@
-"""Evaluate OnlineLearning against two baselines on simulator/20_Tasks_Testset.json.
+"""Evaluate OnlineLearning against baselines on simulator 20-task benchmarks.
 
-Three conditions are run per task:
+Five conditions are run per task:
   1. online_ucb   — full pipeline with candidate-level UCB (no dreaming for speed)
   2. random       — pick a candidate uniformly at random each round (5 seeds)
   3. scap_greedy  — S_cap only (w_n forced to 0, no candidate UCB, no weight SGD)
+  4. lappas_coverage — Lappas-style Skill Coverage baseline: static weighted
+                       discrete skill coverage only. This is not a full
+                       reproduction of Lappas social-network team formation.
+  5. mapscore_greedy — static full MapScore top-1 (gate + S_cap + S_need)
 
 For each condition we record:
   - n_rounds  : number of rounds until the same candidate has been selected
@@ -50,12 +54,24 @@ from datatypes import (  # noqa: E402
     CapabilityEntry,
     NeedEntry,
     Task,
+    TaskOffer,
     TaskRequirement,
     UserState,
 )
 from encoder import SimpleEncoder  # noqa: E402
 from feedback_provider import FeedbackProvider  # noqa: E402
 from ol_utils import dummy_user_feedback  # noqa: E402
+from simulator.bilateral_simulator import BilateralSimulator  # noqa: E402
+from simulator.config import SimulatorConfig  # noqa: E402
+from simulator.mock_backend import RuleBasedBackend  # noqa: E402
+from simulator.outcome_simulator import OutcomeSimulator  # noqa: E402
+from simulator.reward import compute_reward  # noqa: E402
+from simulator.types import (  # noqa: E402
+    CandidateCard,
+    MatchingContext,
+    TaskSpec,
+    UserProfile,
+)
 
 
 # ---------- Experiment configuration ----------
@@ -107,6 +123,13 @@ def _needs_from_dict(need_dict: Dict[str, float]) -> List[NeedEntry]:
     return [
         NeedEntry(ENC(skill), intensity=float(intensity), description=skill)
         for skill, intensity in need_dict.items()
+    ]
+
+
+def _offers_from_dict(offer_dict: Dict[str, float]) -> List[TaskOffer]:
+    return [
+        TaskOffer(ENC(offer), strength=float(strength), source="explicit", description=offer)
+        for offer, strength in offer_dict.items()
     ]
 
 
@@ -233,7 +256,7 @@ def build_task(task_dict: dict) -> Task:
         task_id=task_dict["task_id"],
         goal=task_dict.get("description", task_dict.get("title", task_dict["task_id"])),
         requirements=reqs,
-        offers=[],
+        offers=_offers_from_dict(task_dict.get("offers", {}) or {}),
         data_clearance=0,
     )
 
@@ -378,6 +401,188 @@ def run_random(
     return n_rounds, selections[-1], selections
 
 
+def lappas_style_skill_coverage_score(candidate: UserState, task: Task) -> float:
+    """Discrete weighted skill coverage for one candidate.
+
+    This Lappas-style Skill Coverage baseline only asks whether a candidate's
+    observed capability level meets each required skill level. It intentionally
+    does not use task offers, candidate needs, MapScore, UCB, feedback updates,
+    Dreaming, or Lappas et al.'s social-network team-formation components.
+    """
+    requirements = task.requirements
+    if not requirements:
+        return 1.0
+
+    total_weight = sum(max(0.0, float(req.level)) for req in requirements)
+    if total_weight <= 0.0:
+        return 0.0
+
+    score = 0.0
+    caps_by_description = {
+        cap.description: float(cap.mu)
+        for cap in candidate.capabilities
+        if cap.description
+    }
+    for req in requirements:
+        weight = max(0.0, float(req.level))
+        if caps_by_description.get(req.description, -1.0) >= float(req.level):
+            score += weight
+    return score / total_weight
+
+
+def run_lappas_coverage(
+    candidate_pool: List[UserState],
+    task: Task,
+) -> Tuple[int, str, List[str], Dict[str, float]]:
+    """Single-round static top-1 selection.
+
+    Method name in outputs: "Lappas-style Skill Coverage". This is a narrow
+    external baseline for weighted discrete skill coverage, not a claim of full
+    Lappas social-network team formation reproduction.
+    """
+    scores = {
+        candidate.user_id: lappas_style_skill_coverage_score(candidate, task)
+        for candidate in candidate_pool
+    }
+    selected_id = max(scores, key=lambda cid: (scores[cid], cid))
+    return 1, selected_id, [selected_id], scores
+
+
+def score_full_mapscore_static(
+    requester: UserState,
+    candidate_pool: List[UserState],
+    task: Task,
+) -> Dict[str, object]:
+    """Compute full static MapScore for every candidate without UCB or learning."""
+    world_model = WorldModel(config=CFG, theta_c=EVAL_THETA_C, theta_n=EVAL_THETA_N)
+    matches = {
+        candidate.user_id: world_model.compute_match(
+            requester, candidate, task, use_ucb=False, round_t=1,
+        )
+        for candidate in candidate_pool
+    }
+    selected_id = max(matches, key=lambda cid: (matches[cid].match_score, cid))
+    return {"selected_id": selected_id, "matches": matches}
+
+
+def run_mapscore_greedy(
+    requester: UserState,
+    candidate_pool: List[UserState],
+    task: Task,
+) -> Tuple[int, str, List[str], Dict[str, object]]:
+    """Static full MapScore top-1; no UCB, feedback update, or dreaming."""
+    scored = score_full_mapscore_static(requester, candidate_pool, task)
+    selected_id = str(scored["selected_id"])
+    return 1, selected_id, [selected_id], scored
+
+
+def _match_metrics(match) -> dict:
+    return {
+        "S_cap": round(float(match.s_cap), 4),
+        "S_need": round(float(match.s_need), 4),
+        "MapScore": round(float(match.match_score), 4),
+        "sigma_gate": int(match.sigma_gate),
+    }
+
+
+def _distribution_stats(values: List[float]) -> dict:
+    if not values:
+        return {"std": 0.0, "range": 0.0, "min": 0.0, "max": 0.0, "mean": 0.0}
+    arr = np.array(values, dtype=float)
+    return {
+        "std": round(float(np.std(arr)), 4),
+        "range": round(float(np.max(arr) - np.min(arr)), 4),
+        "min": round(float(np.min(arr)), 4),
+        "max": round(float(np.max(arr)), 4),
+        "mean": round(float(np.mean(arr)), 4),
+    }
+
+
+def _user_profile_from_dict(data: dict) -> UserProfile:
+    return UserProfile(
+        user_id=data["user_id"],
+        role=data.get("role", ""),
+        capabilities=data.get("capabilities", {}) or {},
+        needs=data.get("needs", {}) or {},
+        preferences=data.get("preferences", {}) or {},
+        constraints=data.get("constraints", {}) or {},
+        history_summary=data.get("history_summary"),
+    )
+
+
+def _task_spec_from_dict(data: dict) -> TaskSpec:
+    return TaskSpec(
+        task_id=data["task_id"],
+        title=data.get("title", data["task_id"]),
+        description=data.get("description", data.get("title", data["task_id"])),
+        required_skills=data.get("required_skills", {}) or {},
+        offers=data.get("offers", {}) or {},
+        metadata=data.get("metadata", {}) or {},
+    )
+
+
+def _candidate_card_from_dict(data: dict) -> CandidateCard:
+    return CandidateCard(
+        candidate_id=data["candidate_id"],
+        summary=data.get("summary", ""),
+        highlighted_strengths=data.get("highlighted_strengths", []) or [],
+        highlighted_risks=data.get("highlighted_risks", []) or [],
+        explanation=data.get("explanation", ""),
+    )
+
+
+def build_matching_context(
+    task_entry: dict,
+    candidate_id: str,
+) -> MatchingContext:
+    task = _task_spec_from_dict(task_entry["task"])
+    requester = _user_profile_from_dict(task_entry["proposer_profile"])
+    candidate_entry = next(
+        c for c in task_entry["candidates"]
+        if c["candidate_profile"]["user_id"] == candidate_id
+    )
+    latents = candidate_entry.get("context_latents", {}) or {}
+    return MatchingContext(
+        requester=requester,
+        candidate=_user_profile_from_dict(candidate_entry["candidate_profile"]),
+        task=task,
+        card=_candidate_card_from_dict(candidate_entry["candidate_card"]),
+        history=latents.get("history", {}) or {},
+        latent_requester_preferences=latents.get("latent_requester_preferences", {}) or {},
+        latent_candidate_preferences=latents.get("latent_candidate_preferences", {}) or {},
+        latent_interpersonal_affinity=latents.get("latent_interpersonal_affinity"),
+        latent_risk_tolerance=latents.get("latent_risk_tolerance"),
+        latent_opportunity_bias=latents.get("latent_opportunity_bias"),
+    )
+
+
+def compute_bilateral_validity(task_entry: dict, candidate_id: str) -> dict:
+    """Run the existing simulator outcome/reward path for one selected pair."""
+    cfg = SimulatorConfig(
+        backend_type="mock",
+        random_seed=42,
+        persona_selection_seed=42,
+        decision_mode="threshold",
+        trace_verbose=False,
+    )
+    cfg.apply_seed()
+    context = build_matching_context(task_entry, candidate_id)
+    backend = RuleBasedBackend(cfg)
+    bilateral = BilateralSimulator(backend, cfg).run(context)
+    outcome = OutcomeSimulator(cfg).simulate(context, bilateral)
+    reward = compute_reward(bilateral, outcome, cfg)
+    return {
+        "candidate_id": candidate_id,
+        "mutual_accept_probability": round(float(bilateral.joint_accept_prob), 4),
+        "completion_probability": round(float(outcome.completion_probability), 4),
+        "requester_satisfaction": round(float(outcome.requester_satisfaction), 4),
+        "candidate_satisfaction": round(float(outcome.candidate_satisfaction), 4),
+        "total_reward": round(float(reward.total_reward), 4),
+        "joint_reward": round(float(reward.feedback_reward), 4),
+        "joint_action": bilateral.joint_action.value,
+    }
+
+
 # ---------- Per-task evaluation ----------
 
 def evaluate_task(
@@ -460,6 +665,32 @@ def evaluate_task(
         random_first_opt.append(first_opt_or_max(sels_r))
         random_selections.append(sel_r)
 
+    # 4-5) Static baselines share the same observed pool so the diagnostics
+    # compare Lappas-style coverage and full MapScore on identical inputs.
+    static_pool = fresh_pool()
+
+    # 4) Lappas-style Skill Coverage: static top-1 on observed skill priors.
+    n_la, sel_la, sels_la, scores_la = run_lappas_coverage(static_pool, task)
+    rho_la_last = rho_for(sel_la)
+    rho_la_mode = rho_for(_mode_selection(sels_la))
+
+    # 5) Static full MapScore greedy: gate + S_cap + S_need, no UCB/update/dreaming.
+    n_mg, sel_mg, sels_mg, scored_mg = run_mapscore_greedy(requester, static_pool, task)
+    rho_mg_last = rho_for(sel_mg)
+    rho_mg_mode = rho_for(_mode_selection(sels_mg))
+    mapscore_matches = scored_mg["matches"]
+    s_need_values = [float(m.s_need) for m in mapscore_matches.values()]
+    selected_pair_metrics = {
+        "mapscore_greedy": _match_metrics(mapscore_matches[sel_mg]),
+        "lappas_coverage": _match_metrics(mapscore_matches[sel_la]),
+    }
+    bilateral_validity = {
+        "online_ucb": compute_bilateral_validity(task_entry, sel_ol),
+        "scap_greedy": compute_bilateral_validity(task_entry, sel_sc),
+        "lappas_coverage": compute_bilateral_validity(task_entry, sel_la),
+        "mapscore_greedy": compute_bilateral_validity(task_entry, sel_mg),
+    }
+
     return {
         "task_id": task_dict["task_id"],
         "title": task_dict.get("title", ""),
@@ -474,6 +705,7 @@ def evaluate_task(
                 "mode_candidate_id": _mode_selection(sels_ol),
                 "rho_last": round(rho_ol_last, 4),
                 "rho_mode": round(rho_ol_mode, 4),
+                "outcome_reward": bilateral_validity["online_ucb"],
             },
             "scap_greedy": {
                 "n_rounds_consensus": n_sc,
@@ -482,6 +714,7 @@ def evaluate_task(
                 "mode_candidate_id": _mode_selection(sels_sc),
                 "rho_last": round(rho_sc_last, 4),
                 "rho_mode": round(rho_sc_mode, 4),
+                "outcome_reward": bilateral_validity["scap_greedy"],
             },
             "random": {
                 "n_rounds_consensus_mean": round(float(np.mean(random_n)), 4),
@@ -497,6 +730,33 @@ def evaluate_task(
                 "rho_mode_per_seed": [round(x, 4) for x in random_rho_mode],
                 "selected_per_seed": random_selections,
             },
+            "lappas_coverage": {
+                "method_name": "Lappas-style Skill Coverage",
+                "n_rounds_consensus": n_la,
+                "n_rounds_first_optimal": first_opt_or_max(sels_la),
+                "selected_candidate_id": sel_la,
+                "mode_candidate_id": _mode_selection(sels_la),
+                "rho_last": round(rho_la_last, 4),
+                "rho_mode": round(rho_la_mode, 4),
+                "coverage_score_selected": round(scores_la[sel_la], 4),
+                "outcome_reward": bilateral_validity["lappas_coverage"],
+            },
+            "mapscore_greedy": {
+                "method_name": "MapScore Greedy",
+                "n_rounds_consensus": n_mg,
+                "n_rounds_first_optimal": first_opt_or_max(sels_mg),
+                "selected_candidate_id": sel_mg,
+                "mode_candidate_id": _mode_selection(sels_mg),
+                "rho_last": round(rho_mg_last, 4),
+                "rho_mode": round(rho_mg_mode, 4),
+                "outcome_reward": bilateral_validity["mapscore_greedy"],
+            },
+        },
+        "diagnostics": {
+            "s_need_pool": _distribution_stats(s_need_values),
+            "mapscore_vs_lappas_top1_different": sel_mg != sel_la,
+            "selected_pair_metrics": selected_pair_metrics,
+            "bilateral_validity": bilateral_validity,
         },
     }
 
@@ -531,6 +791,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--pool-size", type=int, default=0,
         help="If > 0, subsample this many candidates per task (deterministic).",
     )
+    parser.add_argument(
+        "--testset",
+        type=Path,
+        default=TESTSET_PATH,
+        help="Path to a 20-task benchmark JSON. Old v1 files remain supported; v2 files may include task.offers.",
+    )
     args = parser.parse_args(argv)
 
     # The runners read these from module-level globals; override them now so
@@ -540,7 +806,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     K_CONVERGE = args.k_converge
 
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    data = json.loads(TESTSET_PATH.read_text())
+    testset_path = args.testset
+    data = json.loads(testset_path.read_text())
     tasks = data["tasks"]
     rng = np.random.default_rng(args.noise_seed)
 
@@ -551,7 +818,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.pool_size and args.pool_size > 0:
         noise_tag += f"_p{args.pool_size}"
     print(
-        f"Loaded {len(tasks)} tasks from {TESTSET_PATH}  |  "
+        f"Loaded {len(tasks)} tasks from {testset_path}  |  "
         f"noise={args.noise_mode} sigma={args.noise_sigma} seed={args.noise_seed}  |  "
         f"n_max={N_MAX_ROUNDS} k_converge={K_CONVERGE}"
     )
@@ -578,7 +845,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"rho_mode={cond['scap_greedy']['rho_mode']:.3f})  "
             f"random(n_c={cond['random']['n_rounds_consensus_mean']:.1f}, "
             f"n_opt={cond['random']['n_rounds_first_optimal_mean']:.1f}, "
-            f"rho_mode={cond['random']['rho_mode_mean']:.3f})"
+            f"rho_mode={cond['random']['rho_mode_mean']:.3f})  "
+            f"lappas_coverage(n_c={cond['lappas_coverage']['n_rounds_consensus']:>2}, "
+            f"n_opt={cond['lappas_coverage']['n_rounds_first_optimal']:>2}, "
+            f"rho_mode={cond['lappas_coverage']['rho_mode']:.3f})  "
+            f"mapscore_greedy(n_c={cond['mapscore_greedy']['n_rounds_consensus']:>2}, "
+            f"n_opt={cond['mapscore_greedy']['n_rounds_first_optimal']:>2}, "
+            f"rho_mode={cond['mapscore_greedy']['rho_mode']:.3f})"
         )
         results.append(result)
 
@@ -616,14 +889,94 @@ def main(argv: Optional[List[str]] = None) -> int:
             "rho_last": aggregate(["random", "rho_last_mean"]),
             "rho_mode": aggregate(["random", "rho_mode_mean"]),
         },
+        "lappas_coverage": {
+            "method_name": "Lappas-style Skill Coverage",
+            "n_rounds_consensus": aggregate(["lappas_coverage", "n_rounds_consensus"]),
+            "n_rounds_first_optimal": aggregate(["lappas_coverage", "n_rounds_first_optimal"]),
+            "rho_last": aggregate(["lappas_coverage", "rho_last"]),
+            "rho_mode": aggregate(["lappas_coverage", "rho_mode"]),
+        },
+        "mapscore_greedy": {
+            "method_name": "MapScore Greedy",
+            "n_rounds_consensus": aggregate(["mapscore_greedy", "n_rounds_consensus"]),
+            "n_rounds_first_optimal": aggregate(["mapscore_greedy", "n_rounds_first_optimal"]),
+            "rho_last": aggregate(["mapscore_greedy", "rho_last"]),
+            "rho_mode": aggregate(["mapscore_greedy", "rho_mode"]),
+        },
     }
+
+    s_need_stds = [r["diagnostics"]["s_need_pool"]["std"] for r in results]
+    s_need_ranges = [r["diagnostics"]["s_need_pool"]["range"] for r in results]
+    s_need_means = [r["diagnostics"]["s_need_pool"]["mean"] for r in results]
+    s_need_maxes = [r["diagnostics"]["s_need_pool"]["max"] for r in results]
+    top1_diff_flags = [
+        bool(r["diagnostics"]["mapscore_vs_lappas_top1_different"])
+        for r in results
+    ]
+    top1_diff_rate = float(np.mean(top1_diff_flags)) if top1_diff_flags else 0.0
+    diagnostics_summary = {
+        "mapscore_vs_lappas_top1_difference_rate": round(top1_diff_rate, 4),
+        "s_need_pool_std": {
+            "mean": round(float(np.mean(s_need_stds)), 4),
+            "median": round(float(np.median(s_need_stds)), 4),
+            "min": round(float(np.min(s_need_stds)), 4),
+            "max": round(float(np.max(s_need_stds)), 4),
+        },
+        "s_need_pool_range": {
+            "mean": round(float(np.mean(s_need_ranges)), 4),
+            "median": round(float(np.median(s_need_ranges)), 4),
+            "min": round(float(np.min(s_need_ranges)), 4),
+            "max": round(float(np.max(s_need_ranges)), 4),
+        },
+        "s_need_pool_mean": {
+            "mean": round(float(np.mean(s_need_means)), 4),
+            "median": round(float(np.median(s_need_means)), 4),
+            "min": round(float(np.min(s_need_means)), 4),
+            "max": round(float(np.max(s_need_means)), 4),
+        },
+        "s_need_pool_max": {
+            "mean": round(float(np.mean(s_need_maxes)), 4),
+            "median": round(float(np.median(s_need_maxes)), 4),
+            "min": round(float(np.min(s_need_maxes)), 4),
+            "max": round(float(np.max(s_need_maxes)), 4),
+        },
+        "low_difference_rate_note": (
+            "Difference rate is below 25%; inspect offer/need matching strength "
+            "and within-pool S_need variance before changing model parameters."
+            if top1_diff_rate < 0.25 else ""
+        ),
+    }
+
+    outcome_fields = [
+        "mutual_accept_probability",
+        "completion_probability",
+        "requester_satisfaction",
+        "candidate_satisfaction",
+        "joint_reward",
+        "total_reward",
+    ]
+    outcome_summary = {}
+    for method in ("online_ucb", "scap_greedy", "lappas_coverage", "mapscore_greedy"):
+        outcome_summary[method] = {}
+        for field in outcome_fields:
+            vals = [
+                r["diagnostics"]["bilateral_validity"][method][field]
+                for r in results
+            ]
+            outcome_summary[method][field] = {
+                "mean": round(float(np.mean(vals)), 4),
+                "std": round(float(np.std(vals)), 4),
+                "median": round(float(np.median(vals)), 4),
+                "min": round(float(np.min(vals)), 4),
+                "max": round(float(np.max(vals)), 4),
+            }
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     out_path = LOGS_DIR / f"online_learning_20tasks_eval_{noise_tag}_{timestamp}.json"
     out_path.write_text(json.dumps({
         "metadata": {
             "generated_at": datetime.now().isoformat(),
-            "testset": str(TESTSET_PATH),
+            "testset": str(testset_path),
             "k_converge": K_CONVERGE,
             "n_max_rounds": N_MAX_ROUNDS,
             "random_seeds": RANDOM_SEEDS,
@@ -634,9 +987,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             "noise_sigma": args.noise_sigma,
             "noise_seed": args.noise_seed,
             "feedback_provider": "GroundTruthFeedback",
+            "external_baselines": {
+                "lappas_coverage": (
+                    "Lappas-style Skill Coverage; discrete weighted required-skill "
+                    "coverage only, not full social-network team formation."
+                ),
+            },
         },
         "per_task": results,
         "summary": summary,
+        "diagnostics_summary": diagnostics_summary,
+        "outcome_summary": outcome_summary,
     }, indent=2))
 
     print()
@@ -652,6 +1013,30 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"n_first_opt={stats['n_rounds_first_optimal']['mean']:>5.2f}  "
             f"rho_mode={stats['rho_mode']['mean']:.3f}  "
             f"rho_last={stats['rho_last']['mean']:.3f}"
+        )
+    print(
+        "Diagnostics: "
+        f"mapscore_vs_lappas_diff_rate={top1_diff_rate:.3f}, "
+        f"S_need_std_mean={diagnostics_summary['s_need_pool_std']['mean']:.4f}, "
+        f"S_need_range_mean={diagnostics_summary['s_need_pool_range']['mean']:.4f}, "
+        f"S_need_max_mean={diagnostics_summary['s_need_pool_max']['mean']:.4f}"
+    )
+    if top1_diff_rate < 0.25:
+        print(
+            "Difference rate is below 25%; not changing model parameters. "
+            "Check whether benchmark offers/needs are too uniform or weak using "
+            "the S_need stats above and per-task diagnostics in the JSON."
+        )
+    print("Outcome/reward means:")
+    for method, stats in outcome_summary.items():
+        print(
+            f"  {method:<16} "
+            f"mutual={stats['mutual_accept_probability']['mean']:.3f}  "
+            f"completion={stats['completion_probability']['mean']:.3f}  "
+            f"req_sat={stats['requester_satisfaction']['mean']:.3f}  "
+            f"cand_sat={stats['candidate_satisfaction']['mean']:.3f}  "
+            f"joint_reward={stats['joint_reward']['mean']:.3f}  "
+            f"total_reward={stats['total_reward']['mean']:.3f}"
         )
     print(f"Wrote evaluation results to {out_path}")
     return 0

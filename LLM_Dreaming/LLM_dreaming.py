@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 import sys
@@ -247,6 +248,16 @@ def _need_summary(profile: Union[UserProfile, UserState]) -> str:
     ) or "none"
 
 
+def _offer_summary(task: Union[Task, MappingTask]) -> str:
+    offers = getattr(task, "offers", [])
+    if isinstance(offers, dict):
+        return ", ".join(f"{name}: {float(strength):.1f}" for name, strength in offers.items()) or "none"
+    return ", ".join(
+        f"{offer.description or 'offer'}: {offer.strength:.1f}"
+        for offer in offers
+    ) or "none"
+
+
 def _score_attr(result: Any, new_name: str, old_name: str) -> float:
     if hasattr(result, new_name):
         return float(getattr(result, new_name))
@@ -279,7 +290,7 @@ def _extract_layer3_match_results(layer3_output: Any) -> List[Any]:
 # Candidate pool: synthetic extended profiles for testing
 # ============================================================
 
-def _task_from_fixture(data: dict) -> Task:
+def _task_from_fixture(data: dict) -> MappingTask:
     requirements = [
         TaskRequirement(
             _enc(item["description"]),
@@ -298,7 +309,7 @@ def _task_from_fixture(data: dict) -> Task:
         )
         for item in data.get("offers", [])
     ]
-    return Task(
+    return MappingTask(
         task_id=data["task_id"],
         goal=data.get("goal", data.get("title", "")),
         requirements=requirements,
@@ -335,7 +346,7 @@ def _extended_profile_from_fixture(data: dict) -> ExtendedProfile:
 
 def load_test_candidates_from_json(
     fixture_path: Union[str, Path] = DEFAULT_DREAMING_FIXTURE_PATH,
-) -> Tuple[ExtendedProfile, Task, List[ExtendedProfile]]:
+) -> Tuple[ExtendedProfile, MappingTask, List[ExtendedProfile]]:
     """
     Load the Layer 3 dreaming demo fixture from JSON.
     """
@@ -352,7 +363,7 @@ def load_test_candidates_from_json(
 
 def create_test_candidates(
     fixture_path: Union[str, Path] = DEFAULT_DREAMING_FIXTURE_PATH,
-) -> Tuple[ExtendedProfile, Task, List[ExtendedProfile]]:
+) -> Tuple[ExtendedProfile, MappingTask, List[ExtendedProfile]]:
     """
     Load Alice + task + 5 candidates from the JSON dreaming fixture.
     """
@@ -371,6 +382,7 @@ def build_agent_persona(ext: ExtendedProfile, role: str, task: Task) -> str:
 
     cap_summary = _capability_summary(ext.profile)
     need_summary = _need_summary(ext.profile)
+    offer_summary = _offer_summary(task)
     priorities = "\n".join(f"  {i+1}. {p}" for i, p in enumerate(ext.soft.priorities))
 
     if role == "requester":
@@ -396,6 +408,7 @@ def build_agent_persona(ext: ExtendedProfile, role: str, task: Task) -> str:
 Your user's profile:
 - Capabilities: {cap_summary}
 - Needs: {need_summary}
+- Task offers / collaboration upside visible to the candidate: {offer_summary}
 - Availability: {ext.soft.availability}
 - Timezone: {ext.soft.timezone}
 - Deadline pressure: {ext.soft.deadline_pressure}
@@ -459,10 +472,18 @@ class DreamSimulator:
     If API_KEY is not set, runs in mock mode with rule-based responses.
     """
 
-    def __init__(self, n_turns: int = 3, base_url: str = "", model: str = "openai/gpt-4o", temperature: float = 0.0):
+    def __init__(
+        self,
+        n_turns: int = 3,
+        base_url: str = "",
+        model: str = "openai/gpt-4o",
+        temperature: float = 0.0,
+        timeout: float = 60.0,
+    ):
         self.n_turns = n_turns
         self.model = model
         self.temperature = temperature
+        self.timeout = timeout
         self.base_url = base_url
         self.api_url = f"{self.base_url}/chat/completions" if base_url else ""
         self.mock_mode = not bool(API_KEY)
@@ -471,7 +492,7 @@ class DreamSimulator:
                 raise ModuleNotFoundError(
                     "httpx is required for DreamSimulator when OPENAI_API_KEY is set"
                 )
-            self.client = httpx.Client(timeout=60.0)
+            self.client = httpx.Client(timeout=timeout)
         if self.mock_mode:
             print("  [Mock mode — set API_KEY for real LLM calls]\n")
 
@@ -489,13 +510,21 @@ class DreamSimulator:
             },
             json={
                 "model": self.model, 
-                "messages": messages,
+                "messages": [{"role": "system", "content": system}] + messages,
                 "temperature": self.temperature,
             },
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["content"][0]["text"]
+        if "choices" in data:
+            return data["choices"][0]["message"]["content"]
+        if "content" in data:
+            content = data["content"]
+            if isinstance(content, list):
+                return content[0].get("text", "")
+            if isinstance(content, str):
+                return content
+        raise KeyError("Unsupported chat completion response shape")
 
     def _mock_response(self, system: str, messages: list) -> str:
         """
@@ -702,6 +731,43 @@ class DreamSimulator:
             "recommendation": rec,
         })
 
+    @staticmethod
+    def _parse_judge_result(judge_result: str) -> dict:
+        """Parse judge JSON robustly while preserving parse failures.
+
+        Real chat APIs occasionally wrap JSON in prose/markdown or return a
+        malformed response. The runner should not crash mid-experiment; when
+        parsing fails completely, return a neutral compatibility score with
+        the raw parse error recorded for diagnostics.
+        """
+        cleaned = judge_result.strip()
+        if cleaned.startswith("```"):
+            if "\n" in cleaned:
+                cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            else:
+                cleaned = cleaned.strip("`").strip()
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    pass
+        return {
+            "time_energy": {"score": 0.5, "reason": "Judge response was not valid JSON."},
+            "priority_alignment": {"score": 0.5, "reason": "Judge response was not valid JSON."},
+            "collab_style": {"score": 0.5, "reason": "Judge response was not valid JSON."},
+            "personality_fit": {"score": 0.5, "reason": "Judge response was not valid JSON."},
+            "overall_compatibility": 0.5,
+            "top_risk": "judge_parse_error",
+            "top_synergy": "judge_parse_error",
+            "recommendation": "risky_match",
+            "parse_error": True,
+            "raw_response_excerpt": cleaned[:500],
+        }
+
     def simulate_conversation(
         self,
         requester: ExtendedProfile,
@@ -764,14 +830,7 @@ class DreamSimulator:
             [{"role": "user", "content": judge_prompt}],
         )
 
-        # Parse judge output
-        try:
-            scores = json.loads(judge_result)
-        except json.JSONDecodeError:
-            cleaned = judge_result.strip()
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0]
-            scores = json.loads(cleaned)
+        scores = self._parse_judge_result(judge_result)
 
         return {
             "candidate_id": candidate.user_id,

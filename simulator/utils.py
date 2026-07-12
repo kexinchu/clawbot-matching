@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import re
 import sys
 from typing import Any
 
@@ -137,6 +138,41 @@ def need_fulfillment(
     return clamp(score / len(needs))
 
 
+def offer_need_fit(
+    offers: dict[str, float],
+    needs: dict[str, float],
+) -> float:
+    """Observable task-offer to candidate-need fit in [0, 1].
+
+    This simulator-side oracle is deterministic and only uses observable
+    ``TaskSpec.offers`` plus candidate profile needs. Hidden latents enter
+    later outcome rules separately, so the oracle is related to MapScore's
+    S_need without being a direct copy of it.
+    """
+    if not offers or not needs:
+        return 0.0
+
+    total_weight = sum(max(0.0, float(v)) for v in needs.values())
+    if total_weight <= 0.0:
+        return 0.0
+
+    score = 0.0
+    for need, intensity in needs.items():
+        need_tokens = _tokens(need)
+        best = 0.0
+        for offer, strength in offers.items():
+            offer_tokens = _tokens(offer)
+            if not need_tokens or not offer_tokens:
+                overlap = 0.0
+            else:
+                overlap = len(need_tokens & offer_tokens) / len(need_tokens | offer_tokens)
+                if need_tokens <= offer_tokens or offer_tokens <= need_tokens:
+                    overlap = max(overlap, 0.85)
+            best = max(best, overlap * max(0.0, float(strength)))
+        score += max(0.0, float(intensity)) * best
+    return clamp(score / total_weight)
+
+
 def risk_score_from_concerns(concerns: list[str]) -> float:
     """Turn a list of concern strings into a [0,1] risk score."""
     risk_keywords = {
@@ -151,3 +187,11 @@ def risk_score_from_concerns(concerns: list[str]) -> float:
             if kw in c.lower():
                 score += inc
     return clamp(score)
+
+
+def _tokens(text: str) -> set[str]:
+    return {
+        tok
+        for tok in re.split(r"[^a-z0-9]+", text.lower().replace("_", " "))
+        if tok and tok not in {"and", "or", "the", "a", "an", "of", "for", "to"}
+    }

@@ -76,6 +76,7 @@ class TaskSpec:
     title: str
     description: str
     required_skills: dict[str, float] = field(default_factory=dict)  # skill -> min_level
+    offers: dict[str, float] = field(default_factory=dict)           # benefit -> strength [0,1]
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
